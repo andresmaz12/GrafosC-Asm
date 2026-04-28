@@ -13,5 +13,8 @@ ast = parser.parsear()
 semantico = AnalizadorSemantico(ast)
 semantico.analizar()
 
+class codigoMermaid:
+    def __init__(self, codigo):
+        self.codigo = codigo
 # A partir de aquí, el AST validado pasaría a una etapa de 
 # "Generación de Código" para dibujar el SVG en pantalla.

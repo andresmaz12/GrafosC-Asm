@@ -1,0 +1,24 @@
+# Arbol de Sintaxis Abstracta MERMAID
+class NodoAST:
+    def traducirC(self):
+        raise NotImplementedError("Aun no se ha implementado un metodo de traduccion a C")
+
+class DefinicionGrafo(NodoAST):
+    def __init__(self, direccion, sentencias):
+        self.direccion = direccion
+        self.sentencias = sentencias
+
+class Conexion(NodoAST):
+    def __init__(self, origen, destino, tipo_enlace):
+        self.origen = origen
+        self.destino = destino
+        self.tipo_enlace = tipo_enlace
+
+class NodoFuncion(NodoAST):
+    pass
+
+class NodoIF(NodoAST):
+    pass
+
+class NodoPrograma(NodoAST):
+    pass
