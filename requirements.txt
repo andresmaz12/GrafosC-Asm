@@ -1,0 +1,4 @@
+# Pipeline de compilacion (Python 3.10+)
+# La pipeline solo usa la libreria estandar (json, os, re, sys, subprocess).
+# Este archivo se conserva para futuras dependencias y para que herramientas
+# de scaffolding detecten el proyecto Python.
