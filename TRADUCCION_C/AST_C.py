@@ -153,6 +153,10 @@ class NodoParametro(NodoAST):
         self.tipo = tipo
         self.nombre = nombre
 
+class NodoBloque(NodoAST):
+    def __init__(self, instrucciones):
+        self.instrucciones = instrucciones
+
 
 # ============================================================
 # Asignacion / declaracion
