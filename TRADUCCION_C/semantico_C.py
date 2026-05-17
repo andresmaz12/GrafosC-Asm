@@ -249,6 +249,11 @@ class AnalizadorSemantico:
     #  Punto de entrada                                                    #
     # ------------------------------------------------------------------ #
 
+    def analizar_y_recolectar(self, programa):
+        self.errores = []
+        self.analizar(programa)
+        return list(self.errores)
+
     def analizar(self, nodo) -> str:
         """
         Analiza el nodo y devuelve su tipo inferido (str).
