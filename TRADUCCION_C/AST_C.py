@@ -26,6 +26,29 @@ def _tok_value(tok):
     return str(tok)
 
 
+def _collect_strings(nodo) -> list:
+    if nodo is None:
+        return []
+    if isinstance(nodo, list):
+        res = []
+        for item in nodo:
+            res.extend(_collect_strings(item))
+        return res
+    if isinstance(nodo, NodoString):
+        return [nodo]
+    
+    res = []
+    if isinstance(nodo, NodoAST):
+        for attr in vars(nodo).values():
+            if isinstance(attr, NodoAST):
+                res.extend(_collect_strings(attr))
+            elif isinstance(attr, list):
+                for item in attr:
+                    if isinstance(item, NodoAST):
+                        res.extend(_collect_strings(item))
+    return res
+
+
 # ============================================================
 # Base
 # ============================================================
@@ -74,6 +97,31 @@ class NodoPrograma(NodoAST):
         codigo = ["section .text", "global _start"]
         data = ["section .bss"]
 
+        # Recolectar strings
+        strings = []
+        for funcion in self.funciones:
+            strings.extend(_collect_strings(funcion))
+        if self.main is not None:
+            strings.extend(_collect_strings(self.main))
+
+        # Asignar etiquetas únicas y generar sección .data
+        data_sec = []
+        if strings:
+            data_sec.append("section .data")
+            for idx, s_node in enumerate(strings):
+                lbl = f"str_{idx}"
+                s_node.label = lbl
+                
+                valor = _tok_value(s_node.argumentos)
+                if valor.startswith('"') and valor.endswith('"'):
+                    valor = valor[1:-1]
+                elif valor.startswith("'") and valor.endswith("'"):
+                    valor = valor[1:-1]
+                
+                # Usamos comillas invertidas en NASM para procesar escapes estilo C
+                data_sec.append(f"    {lbl} db `{valor}`, 0")
+                data_sec.append(f"    {lbl}_len equ $ - {lbl} - 1")
+
         for funcion in self.funciones:
             codigo.append(funcion.generarCodigo())
             for var in funcion.variables_declaradas():
@@ -100,7 +148,12 @@ class NodoPrograma(NodoAST):
             else:
                 data.append(f"    {nombre}: resd 1")
 
-        return "\n".join(data) + "\n\n" + "\n".join(codigo) + "\n"
+        partes = []
+        if data_sec:
+            partes.append("\n".join(data_sec))
+        partes.append("\n".join(data))
+        partes.append("\n".join(codigo))
+        return "\n\n".join(partes) + "\n"
 
 
 # ============================================================
@@ -318,7 +371,8 @@ class NodoString(NodoAST):
         return valor
 
     def generarCodigo(self) -> str:
-        return "    ; strings en ASM no implementados"
+        lbl = getattr(self, "label", "str_unknown")
+        return f"    mov     eax, {lbl}"
 
 
 # ============================================================
@@ -365,6 +419,8 @@ class NodoCondicional(NodoAST):
 
 
 class NodoImprimir(NodoAST):
+    _label_counter = 0
+
     def __init__(self, tipo, argumentos):
         self.tipo = tipo
         self.argumentos = argumentos or []
@@ -375,7 +431,78 @@ class NodoImprimir(NodoAST):
         return f"{nombre}({args});"
 
     def generarCodigo(self) -> str:
-        return "    ; printf no implementado en ASM directo"
+        if not self.argumentos:
+            return "    ; printf sin argumentos"
+        
+        arg = self.argumentos[0]
+        if isinstance(arg, NodoString):
+            lbl = getattr(arg, "label", "str_unknown")
+            codigo = [
+                f"    ; --- imprimir string ({lbl}) ---",
+                "    mov     eax, 4          ; sys_write",
+                "    mov     ebx, 1          ; stdout",
+                f"    mov     ecx, {lbl}      ; address of string",
+                f"    mov     edx, {lbl}_len  ; length of string",
+                "    int     0x80"
+            ]
+            return "\n".join(codigo)
+        
+        NodoImprimir._label_counter += 1
+        n = NodoImprimir._label_counter
+        l_pos = f"print_int_pos_{n}"
+        l_loop = f"print_int_loop_{n}"
+        l_show = f"print_int_show_{n}"
+
+        codigo = []
+        codigo.append("    ; --- evaluar expresion para imprimir ---")
+        codigo.append(arg.generarCodigo())
+        
+        codigo.extend([
+            "    ; --- imprimir entero en eax ---",
+            "    push    edi",
+            "    push    ebx",
+            "    push    ecx",
+            "    push    edx",
+            "    push    esi",
+            "",
+            "    mov     esi, eax        ; guardar valor",
+            "    mov     edi, esp        ; guardar puntero de pila original",
+            "    mov     ebx, 10         ; divisor base 10",
+            "",
+            "    test    eax, eax",
+            f"    jns     {l_pos}",
+            "    neg     eax",
+            f"{l_pos}:",
+            f"{l_loop}:",
+            "    xor     edx, edx",
+            "    div     ebx",
+            "    add     dl, '0'",
+            "    dec     esp",
+            "    mov     [esp], dl",
+            "    test    eax, eax",
+            f"    jnz     {l_loop}",
+            "",
+            "    test    esi, esi",
+            f"    jns     {l_show}",
+            "    dec     esp",
+            "    mov     byte [esp], '-'",
+            "",
+            f"{l_show}:",
+            "    mov     eax, 4          ; sys_write",
+            "    mov     ebx, 1          ; stdout",
+            "    mov     ecx, esp        ; buffer",
+            "    mov     edx, edi",
+            "    sub     edx, esp        ; longitud = edi - esp",
+            "    int     0x80",
+            "",
+            "    mov     esp, edi        ; restaurar puntero de pila",
+            "    pop     esi",
+            "    pop     edx",
+            "    pop     ecx",
+            "    pop     ebx",
+            "    pop     edi"
+        ])
+        return "\n".join(codigo)
 
 
 class NodoWhile(NodoAST):
@@ -451,6 +578,8 @@ class NodoIncremento(NodoAST):
 
 
 class NodoEntrada(NodoAST):
+    _label_counter = 0
+
     def __init__(self, tipo, formato, variable):
         self.tipo = tipo
         self.formato = formato
@@ -462,7 +591,74 @@ class NodoEntrada(NodoAST):
         return f"scanf({formato}, &{nombre});"
 
     def generarCodigo(self) -> str:
-        return "    ; scanf no implementado en ASM directo"
+        nombre = _tok_value(self.variable)
+        
+        NodoEntrada._label_counter += 1
+        n = NodoEntrada._label_counter
+        l_loop = f"scan_int_loop_{n}"
+        l_done = f"scan_int_done_{n}"
+        l_store = f"scan_int_store_{n}"
+        
+        codigo = [
+            f"    ; --- leer entero por teclado para [{nombre}] ---",
+            "    push    ebx",
+            "    push    ecx",
+            "    push    edx",
+            "    push    esi",
+            "    push    edi",
+            "",
+            "    ; Reservar buffer temporal de 16 bytes en la pila",
+            "    sub     esp, 16",
+            "",
+            "    mov     eax, 3          ; sys_read",
+            "    mov     ebx, 0          ; stdin",
+            "    mov     ecx, esp        ; buffer",
+            "    mov     edx, 16         ; longitud maxima",
+            "    int     0x80",
+            "",
+            "    ; Procesar buffer para parsear el entero",
+            "    xor     eax, eax        ; acumulador = 0",
+            "    xor     edi, edi        ; signo = 0 (positivo)",
+            "    mov     esi, ecx        ; puntero al buffer",
+            "",
+            "    test    edx, edx        ; si no se leyo nada",
+            f"    jz      {l_done}",
+            "",
+            "    movzx   ebx, byte [esi]",
+            "    cmp     bl, '-'",
+            f"    jne     {l_loop}",
+            "    mov     edi, 1          ; signo = 1 (negativo)",
+            "    inc     esi",
+            "",
+            f"{l_loop}:",
+            "    movzx   ebx, byte [esi]",
+            "    cmp     bl, '0'",
+            f"    jl      {l_done}",
+            "    cmp     bl, '9'",
+            f"    jg      {l_done}",
+            "",
+            "    sub     bl, '0'",
+            "    imul    eax, 10",
+            "    add     eax, ebx",
+            "    inc     esi",
+            f"    jmp     {l_loop}",
+            "",
+            f"{l_done}:",
+            "    test    edi, edi",
+            f"    jz      {l_store}",
+            "    neg     eax",
+            "",
+            f"{l_store}:",
+            f"    mov     [{nombre}], eax  ; guardar valor en la variable",
+            "",
+            "    add     esp, 16         ; liberar buffer de pila",
+            "    pop     edi",
+            "    pop     esi",
+            "    pop     edx",
+            "    pop     ecx",
+            "    pop     ebx"
+        ]
+        return "\n".join(codigo)
 
 
 class NodoLlamadaFuncion(NodoAST):

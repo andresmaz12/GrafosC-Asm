@@ -4,10 +4,10 @@ import re
 # Definir los patrones para los diferentes tipos de tokens
 tokenPatron = {
     "STRING": r'"[^"]*"',
-    "KEYWORD": r'\b(if|else|while|return|int|float|void|puts|printf)\b',
+    "KEYWORD": r'\b(if|else|while|return|int|float|void|puts|printf|scanf|for|char|bool|string)\b',
     "IDENTIFIER": r'\b[a-zA-Z_][a-zA-Z0-9_]*\b',
     "NUMBER": r'\b\d+(\.\d+)?\b',
-    "OPERATOR": r'\+\+|--|<<|[+\-*/=<>]',
+    "OPERATOR": r'==|!=|<=|>=|&&|\|\||\+\+|--|<<|[+\-*/=<>!]',
     "DELIMITER": r'[(),;{}\'\"]',
     "WHITESPACE": r'\s+',
 }
