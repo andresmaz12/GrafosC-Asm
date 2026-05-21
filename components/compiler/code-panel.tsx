@@ -5,7 +5,7 @@
 // ============================================
 // Panel lateral derecho con pestanas de codigo C, Assembler y Echo debajo
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { Code2, Cpu, Copy, Check, Download, Terminal, Trash2, ChevronDown, ChevronUp, GitBranch } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -38,7 +38,9 @@ export function CodePanel({
 }: CodePanelProps) {
   const [copiedTab, setCopiedTab] = useState<'c' | 'asm' | 'mermaid' | null>(null)
   const [isEchoExpanded, setIsEchoExpanded] = useState(true)
+  const [echoHeight, setEchoHeight] = useState(160)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const echoResizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -46,6 +48,28 @@ export function CodePanel({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [echoMessages, isEchoExpanded])
+
+  // Handler de resize del panel Echo (borde superior arrastrable)
+  const handleEchoResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    echoResizeRef.current = { startY: e.clientY, startHeight: echoHeight }
+
+    const onMove = (ev: MouseEvent) => {
+      if (!echoResizeRef.current) return
+      const dy = echoResizeRef.current.startY - ev.clientY   // arrastrar hacia arriba = mas alto
+      const newHeight = Math.min(480, Math.max(60, echoResizeRef.current.startHeight + dy))
+      setEchoHeight(newHeight)
+    }
+
+    const onUp = () => {
+      echoResizeRef.current = null
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [echoHeight])
 
   const handleCopy = async (code: string, tab: 'c' | 'asm' | 'mermaid') => {
     await navigator.clipboard.writeText(code)
@@ -278,10 +302,21 @@ export function CodePanel({
         {/* Echo Panel - Below code tabs */}
         <div 
           className={cn(
-            'flex flex-col bg-code-bg border-t border-border transition-all duration-300',
-            isEchoExpanded ? 'h-40' : 'h-10'
+            'flex flex-col bg-code-bg border-t border-border transition-all duration-150',
           )}
+          style={{ height: isEchoExpanded ? echoHeight : 40 }}
         >
+          {/* Echo Resize Handle — borde superior arrastrable */}
+          {isEchoExpanded && (
+            <div
+              className="h-1.5 w-full cursor-ns-resize shrink-0 flex items-center justify-center group"
+              onMouseDown={handleEchoResizeMouseDown}
+              title="Arrastra para redimensionar"
+            >
+              <div className="w-8 h-0.5 rounded-full bg-border group-hover:bg-primary transition-colors" />
+            </div>
+          )}
+
           {/* Echo Header */}
           <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-panel shrink-0">
             <button 

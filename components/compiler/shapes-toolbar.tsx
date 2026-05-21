@@ -51,15 +51,15 @@ export function ShapesToolbar({ onDragStart, className }: ShapesToolbarProps) {
     <TooltipProvider delayDuration={300}>
       <aside 
         className={cn(
-          'flex flex-col w-16 bg-sidebar border-r border-sidebar-border',
+          'flex flex-col w-16 bg-sidebar-green border-r border-sidebar-green-border',
           'animate-slide-in-left',
           className
         )}
       >
         {/* Header */}
-        <div className="p-3 border-b border-sidebar-border">
-          <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-            <Layers className="w-5 h-5 text-primary" />
+        <div className="p-3 border-b border-sidebar-green-border">
+          <div className="w-10 h-10 rounded-lg bg-shape-start-bg border border-shape-start-border flex items-center justify-center">
+            <Layers className="w-5 h-5 text-shape-start-text" />
           </div>
         </div>
 
@@ -77,7 +77,7 @@ export function ShapesToolbar({ onDragStart, className }: ShapesToolbarProps) {
                     className={cn(
                       'w-12 h-12 rounded-lg flex items-center justify-center',
                       'border-2 transition-all duration-200 cursor-grab active:cursor-grabbing',
-                      'hover:scale-105 hover:shadow-lg',
+                      'hover:scale-105 hover:shadow-lg hover:brightness-110',
                       colors.bg,
                       colors.border,
                       colors.text,
@@ -99,7 +99,7 @@ export function ShapesToolbar({ onDragStart, className }: ShapesToolbarProps) {
         </div>
 
         {/* Footer hint */}
-        <div className="p-2 border-t border-sidebar-border">
+        <div className="p-2 border-t border-sidebar-green-border">
           <p className="text-[10px] text-center text-muted-foreground">
             Arrastra al canvas
           </p>

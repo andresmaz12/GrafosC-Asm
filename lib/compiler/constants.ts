@@ -20,35 +20,35 @@ export const DEFAULT_SHAPE_SIZES: Record<FlowchartShapeType, { width: number; he
  * Colores semanticos para cada tipo de figura
  */
 export const SHAPE_COLORS: Record<FlowchartShapeType, { bg: string; border: string; text: string }> = {
-  'start-end': { 
-    bg: 'bg-success/20', 
-    border: 'border-success', 
-    text: 'text-success' 
+  'start-end': {
+    bg: 'bg-shape-start-bg',
+    border: 'border-shape-start-border',
+    text: 'text-shape-start-text',
   },
-  'process': { 
-    bg: 'bg-primary/20', 
-    border: 'border-primary', 
-    text: 'text-primary' 
+  'process': {
+    bg: 'bg-shape-process-bg',
+    border: 'border-shape-process-border',
+    text: 'text-shape-process-text',
   },
-  'decision': { 
-    bg: 'bg-warning/20', 
-    border: 'border-warning', 
-    text: 'text-warning' 
+  'decision': {
+    bg: 'bg-shape-decision-bg',
+    border: 'border-shape-decision-border',
+    text: 'text-shape-decision-text',
   },
-  'input-output': { 
-    bg: 'bg-info/20', 
-    border: 'border-info', 
-    text: 'text-info' 
+  'input-output': {
+    bg: 'bg-shape-io-bg',
+    border: 'border-shape-io-border',
+    text: 'text-shape-io-text',
   },
-  'subprocess': { 
-    bg: 'bg-accent/20', 
-    border: 'border-accent', 
-    text: 'text-accent-foreground' 
+  'subprocess': {
+    bg: 'bg-shape-sub-bg',
+    border: 'border-shape-sub-border',
+    text: 'text-shape-sub-text',
   },
-  'return': { 
-    bg: 'bg-chart-3/20', 
-    border: 'border-chart-3', 
-    text: 'text-chart-3' 
+  'return': {
+    bg: 'bg-shape-return-bg',
+    border: 'border-shape-return-border',
+    text: 'text-shape-return-text',
   },
 }
 

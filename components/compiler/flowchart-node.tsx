@@ -16,6 +16,8 @@ import type { FlowchartNode, HandleSide } from '@/lib/compiler/types'
 interface FlowchartNodeComponentProps {
   node: FlowchartNode
   isSelected: boolean
+  /** Handle del nodo que está bajo el cursor durante un drag de conexión */
+  connectionTargetHandle?: HandleSide | null
   onSelect: () => void
   onUpdate: (updates: Partial<FlowchartNode>) => void
   onDelete: () => void
@@ -34,6 +36,7 @@ const HANDLE_POSITION_CLASSES: Record<HandleSide, string> = {
 export function FlowchartNodeComponent({
   node,
   isSelected,
+  connectionTargetHandle = null,
   onSelect,
   onUpdate,
   onDelete,
@@ -200,6 +203,7 @@ export function FlowchartNodeComponent({
         </div>
       )}
 
+      {/* Handles para iniciar conexiones (solo cuando está seleccionado) */}
       {isSelected && onConnectionStart && (
         <>
           {HANDLE_SIDES.map((side) => (
@@ -223,6 +227,31 @@ export function FlowchartNodeComponent({
             />
           ))}
         </>
+      )}
+
+      {/* Handle receptor: visible incluso sin selección durante drag de conexión */}
+      {connectionTargetHandle && !isSelected && (
+        <div
+          data-handle="true"
+          className={cn(
+            'absolute h-5 w-5 rounded-full border-2 z-30 pointer-events-none',
+            'border-emerald-400 bg-emerald-400/20',
+            'animate-connection-handle-pulse',
+            HANDLE_POSITION_CLASSES[connectionTargetHandle],
+          )}
+        />
+      )}
+
+      {/* Handle receptor sobre nodo seleccionado: resaltar el handle específico */}
+      {connectionTargetHandle && isSelected && (
+        <div
+          data-handle="true"
+          className={cn(
+            'absolute h-5 w-5 rounded-full border-2 z-30 pointer-events-none',
+            'border-emerald-300 bg-emerald-300/30 shadow-[0_0_8px_2px_rgba(52,211,153,0.5)]',
+            HANDLE_POSITION_CLASSES[connectionTargetHandle],
+          )}
+        />
       )}
     </div>
   )

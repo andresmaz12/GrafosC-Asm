@@ -101,7 +101,8 @@ export function buildOrthogonalPath(
 }
 
 /**
- * Construye un path para la linea provisional (drag) hacia un punto libre.
+ * Construye un path ortogonal para la linea provisional (drag) hacia un punto libre.
+ * Usa angulos rectos igual que buildOrthogonalPath, para consistencia visual.
  */
 export function buildProvisionalPath(
   source: Point,
@@ -111,7 +112,23 @@ export function buildProvisionalPath(
   const offset = 24
   const sv = sideVector(sourceSide)
   const sOff = { x: source.x + sv.x * offset, y: source.y + sv.y * offset }
-  return `M ${source.x} ${source.y} L ${sOff.x} ${sOff.y} L ${target.x} ${target.y}`
+
+  const sourceHorizontal = sourceSide === 'e' || sourceSide === 'w'
+  let bend: Point
+  if (sourceHorizontal) {
+    // Sali horizontal → doblar hacia el eje Y del destino
+    bend = { x: target.x, y: sOff.y }
+  } else {
+    // Sali vertical → doblar hacia el eje X del destino
+    bend = { x: sOff.x, y: target.y }
+  }
+
+  return [
+    `M ${source.x} ${source.y}`,
+    `L ${sOff.x} ${sOff.y}`,
+    `L ${bend.x} ${bend.y}`,
+    `L ${target.x} ${target.y}`,
+  ].join(' ')
 }
 
 /**

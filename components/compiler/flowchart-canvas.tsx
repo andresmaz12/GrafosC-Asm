@@ -9,7 +9,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { cn } from '@/lib/utils'
-import { ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react'
+import { ZoomIn, ZoomOut, RotateCcw, MousePointer2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { CANVAS_CONFIG } from '@/lib/compiler/constants'
@@ -75,10 +75,15 @@ export function FlowchartCanvas({
   const transformRef = useRef<HTMLDivElement>(null)
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
-  const [isDraggingCanvas, setIsDraggingCanvas] = useState(false)
   const [isDropTarget, setIsDropTarget] = useState(false)
   const [connecting, setConnecting] = useState<ConnectingState | null>(null)
   const [pendingDecision, setPendingDecision] = useState<PendingDecisionConn | null>(null)
+  // ID del nodo receptor + handle más cercano durante drag de conexión
+  const [hoverTargetId, setHoverTargetId] = useState<string | null>(null)
+  const [hoverTargetHandle, setHoverTargetHandle] = useState<HandleSide | null>(null)
+  // Refs para el pan del canvas
+  const isPanningRef = useRef(false)
+  const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 })
 
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + CANVAS_CONFIG.zoomStep, CANVAS_CONFIG.maxZoom))
@@ -125,12 +130,58 @@ export function FlowchartCanvas({
     [screenToLocal, onNodeAdd],
   )
 
-  const handleCanvasClick = (e: React.MouseEvent) => {
-    if (e.target === canvasRef.current || e.target === transformRef.current) {
-      onNodeSelect(null)
-      onConnectionSelect(null)
-    }
-  }
+
+  // ============================================================
+  // Pan del canvas — predeterminado al arrastrar espacio vacío
+  // También funciona con middle-click (botón 1) en cualquier lugar
+  // ============================================================
+
+  const handleCanvasMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      const isOnEmptyCanvas =
+        e.target === canvasRef.current || e.target === transformRef.current
+      const isLeftClick = e.button === 0
+      const isMiddleClick = e.button === 1
+
+      // Deseleccionar al tocar canvas vacío
+      if (isOnEmptyCanvas) {
+        onNodeSelect(null)
+        onConnectionSelect(null)
+      }
+
+      // Pan: left-click en espacio vacío O middle-click en cualquier lugar
+      if ((isLeftClick && isOnEmptyCanvas) || isMiddleClick) {
+        e.preventDefault()
+        isPanningRef.current = true
+        panStartRef.current = {
+          x: e.clientX,
+          y: e.clientY,
+          panX: pan.x,
+          panY: pan.y,
+        }
+
+        const handlePanMove = (ev: MouseEvent) => {
+          if (!isPanningRef.current) return
+          const dx = ev.clientX - panStartRef.current.x
+          const dy = ev.clientY - panStartRef.current.y
+          setPan({
+            x: panStartRef.current.panX + dx,
+            y: panStartRef.current.panY + dy,
+          })
+        }
+
+        const handlePanUp = () => {
+          isPanningRef.current = false
+          document.removeEventListener('mousemove', handlePanMove)
+          document.removeEventListener('mouseup', handlePanUp)
+        }
+
+        document.addEventListener('mousemove', handlePanMove)
+        document.addEventListener('mouseup', handlePanUp)
+      }
+    },
+    [onNodeSelect, onConnectionSelect, pan.x, pan.y],
+  )
 
   // ============================================================
   // Conexiones: drag desde handle hasta otro nodo
@@ -150,9 +201,27 @@ export function FlowchartCanvas({
     const handleMove = (e: MouseEvent) => {
       const point = screenToLocal(e.clientX, e.clientY)
       setConnecting((prev) => (prev ? { ...prev, current: point } : prev))
+
+      // Detectar el nodo y el handle más cercano durante el drag de conexión
+      const targetEl = document.elementFromPoint(e.clientX, e.clientY)
+      const nodeEl = targetEl?.closest('[data-node-id]') as HTMLElement | null
+      const targetId = nodeEl?.dataset.nodeId
+
+      if (targetId && targetId !== connecting.sourceId) {
+        setHoverTargetId(targetId)
+        const targetNode = nodes.find((n) => n.id === targetId)
+        if (targetNode) {
+          setHoverTargetHandle(nearestHandle(targetNode, point))
+        }
+      } else {
+        setHoverTargetId(null)
+        setHoverTargetHandle(null)
+      }
     }
 
     const handleUp = (e: MouseEvent) => {
+      setHoverTargetId(null)
+      setHoverTargetHandle(null)
       const targetEl = document.elementFromPoint(e.clientX, e.clientY)
       const nodeEl = targetEl?.closest('[data-node-id]') as HTMLElement | null
       const targetId = nodeEl?.dataset.nodeId
@@ -302,22 +371,6 @@ export function FlowchartCanvas({
               </TooltipTrigger>
               <TooltipContent>Restablecer vista</TooltipContent>
             </Tooltip>
-
-            <div className="w-px h-6 bg-border mx-1" />
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={isDraggingCanvas ? 'secondary' : 'ghost'}
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setIsDraggingCanvas(!isDraggingCanvas)}
-                >
-                  <Move className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Mover canvas</TooltipContent>
-            </Tooltip>
           </div>
         </TooltipProvider>
       </div>
@@ -330,11 +383,18 @@ export function FlowchartCanvas({
           'transition-all duration-200',
           isDropTarget && 'drop-target-active ring-2 ring-primary ring-inset',
         )}
-        onClick={handleCanvasClick}
+        onClick={undefined}
+        onMouseDown={handleCanvasMouseDown}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        style={{ cursor: isDraggingCanvas ? 'grab' : 'default' }}
+        style={{
+          cursor: isPanningRef.current
+            ? 'grabbing'
+            : connecting
+            ? 'crosshair'
+            : 'grab',
+        }}
       >
         <div
           ref={transformRef}
@@ -385,6 +445,9 @@ export function FlowchartCanvas({
               key={node.id}
               node={node}
               isSelected={node.id === selectedNodeId}
+              connectionTargetHandle={
+                connecting && node.id === hoverTargetId ? hoverTargetHandle : null
+              }
               onSelect={() => onNodeSelect(node.id)}
               onUpdate={(updates) => onNodeUpdate(node.id, updates)}
               onDelete={() => onNodeDelete(node.id)}
@@ -397,7 +460,7 @@ export function FlowchartCanvas({
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="text-center animate-fade-in-up">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                <Move className="w-8 h-8 text-muted-foreground" />
+                <MousePointer2 className="w-8 h-8 text-muted-foreground" />
               </div>
               <p className="text-lg font-medium text-muted-foreground">Arrastra figuras aqui</p>
               <p className="text-sm text-muted-foreground/70 mt-1">

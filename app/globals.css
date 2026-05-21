@@ -267,3 +267,131 @@
     linear-gradient(90deg, var(--border) 1px, transparent 1px);
   background-size: 20px 20px;
 }
+
+/* ============================================================
+   Paleta de figuras del diagrama de flujo
+   Fuente: tonalidades lime-cream, light-green, emerald,
+           ocean-mist, tropical-teal, bondi-blue, cerulean
+   Baja saturacion — contraste suficiente para diferenciar objetos
+   ============================================================ */
+
+:root {
+  /* Inicio/Fin — light-green (verde suave) */
+  --shape-start-bg:     #eef9ec;
+  --shape-start-border: #77cc66;
+  --shape-start-text:   #337326;
+
+  /* Proceso — cerulean (azul claro) */
+  --shape-process-bg:     #e9f6fb;
+  --shape-process-border: #50b4e2;
+  --shape-process-text:   #156184;
+
+  /* Condicional — tropical-teal (cian-teal) */
+  --shape-decision-bg:     #ecf8f9;
+  --shape-decision-border: #64cbce;
+  --shape-decision-text:   #257274;
+
+  /* Variable — emerald (esmeralda) */
+  --shape-io-bg:     #edf8f1;
+  --shape-io-border: #6dc58c;
+  --shape-io-text:   #2c6d43;
+
+  /* Subproceso — bondi-blue (azul oceano) */
+  --shape-sub-bg:     #e8f7fc;
+  --shape-sub-border: #4ac3e8;
+  --shape-sub-text:   #126c87;
+
+  /* Retorno — lime-cream (verde lima) */
+  --shape-return-bg:     #f7fbe9;
+  --shape-return-border: #c3e250;
+  --shape-return-text:   #6c8415;
+
+  /* Sidebar — ocean-mist claro */
+  --sidebar-green:        #edf7f5;
+  --sidebar-green-border: #93d2c0;
+}
+
+.dark {
+  /* Inicio/Fin — light-green oscuro */
+  --shape-start-bg:     #0c1b09;
+  --shape-start-border: #449933;
+  --shape-start-text:   #99d98c;
+
+  /* Proceso — cerulean oscuro */
+  --shape-process-bg:     #05171f;
+  --shape-process-border: #1d81af;
+  --shape-process-text:   #7bc7ea;
+
+  /* Condicional — tropical-teal oscuro */
+  --shape-decision-bg:     #091b1b;
+  --shape-decision-border: #31989b;
+  --shape-decision-text:   #8bd8da;
+
+  /* Variable — emerald oscuro */
+  --shape-io-bg:     #0a1a10;
+  --shape-io-border: #3a9259;
+  --shape-io-text:   #92d3a9;
+
+  /* Subproceso — bondi-blue oscuro */
+  --shape-sub-bg:     #041920;
+  --shape-sub-border: #1790b5;
+  --shape-sub-text:   #78d2ed;
+
+  /* Retorno — lime-cream oscuro */
+  --shape-return-bg:     #191f05;
+  --shape-return-border: #90af1d;
+  --shape-return-text:   #d2ea7b;
+
+  /* Sidebar — ocean-mist oscuro */
+  --sidebar-green:        #0f241e;
+  --sidebar-green-border: #2d6c5a;
+}
+
+@theme inline {
+  --color-shape-start-bg:      var(--shape-start-bg);
+  --color-shape-start-border:  var(--shape-start-border);
+  --color-shape-start-text:    var(--shape-start-text);
+
+  --color-shape-process-bg:    var(--shape-process-bg);
+  --color-shape-process-border: var(--shape-process-border);
+  --color-shape-process-text:  var(--shape-process-text);
+
+  --color-shape-decision-bg:   var(--shape-decision-bg);
+  --color-shape-decision-border: var(--shape-decision-border);
+  --color-shape-decision-text: var(--shape-decision-text);
+
+  --color-shape-io-bg:         var(--shape-io-bg);
+  --color-shape-io-border:     var(--shape-io-border);
+  --color-shape-io-text:       var(--shape-io-text);
+
+  --color-shape-sub-bg:        var(--shape-sub-bg);
+  --color-shape-sub-border:    var(--shape-sub-border);
+  --color-shape-sub-text:      var(--shape-sub-text);
+
+  --color-shape-return-bg:     var(--shape-return-bg);
+  --color-shape-return-border: var(--shape-return-border);
+  --color-shape-return-text:   var(--shape-return-text);
+
+  --color-sidebar-green:        var(--sidebar-green);
+  --color-sidebar-green-border: var(--sidebar-green-border);
+}
+
+/* ============================================================
+   Animacion del handle receptor durante drag de conexion
+   Solo el handle especifico que el nodo destino mostrara
+   ============================================================ */
+
+@keyframes connection-handle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
+  }
+  50% {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 5px rgba(52, 211, 153, 0);
+  }
+}
+
+.animate-connection-handle-pulse {
+  animation: connection-handle-pulse 0.7s ease-in-out infinite;
+}
