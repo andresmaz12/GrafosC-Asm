@@ -117,6 +117,25 @@ class _Builder:
                 return e.get("targetId")
         return None
 
+    def _reaches_node(self, start, target, limit=200):
+        """Comprueba si desde ``start`` se puede llegar a ``target``
+        siguiendo las aristas del grafo (BFS acotado).  Se usa para
+        detectar back-edges que forman ciclos (while loops)."""
+        visited = set()
+        queue = [start]
+        steps = 0
+        while queue and steps < limit:
+            cur = queue.pop(0)
+            if cur == target:
+                return True
+            if cur in visited:
+                continue
+            visited.add(cur)
+            for e in self.out_edges(cur):
+                queue.append(e.get("targetId"))
+            steps += 1
+        return False
+
     def build_block(self, start_id, stop_at: set[str] | None = None):
         """Construye una lista de nodos de AST recorriendo el grafo.
 
@@ -172,15 +191,46 @@ class _Builder:
                 cond_type = data.get("conditionalType", "if")
                 condicion = _parse_expr(data.get("condition") or _strip_keyword(node.get("content", "")))
 
-                if cond_type == "while":
-                    body_target = self.branch_target(current_id, "yes")
-                    after_target = self.branch_target(current_id, "no")
-                    if body_target is None:
+                # Variables para el while (se llenan por auto-deteccion o
+                # por la rama explicita de cond_type=="while").
+                body_target = None
+                after_target = None
+
+                # --- Auto-deteccion de while ---
+                # Si el tipo es "if" (o default), verificamos si alguna
+                # rama forma un back-edge al propio nodo decision,
+                # lo que indica un patron de ciclo (while loop).
+                if cond_type == "if":
+                    yes_t = self.branch_target(current_id, "yes")
+                    no_t = self.branch_target(current_id, "no")
+                    if yes_t is None or no_t is None:
                         edges = self.out_edges(current_id)
-                        if edges:
-                            body_target = edges[0].get("targetId")
-                        if len(edges) > 1:
-                            after_target = edges[1].get("targetId")
+                        if yes_t is None and edges:
+                            yes_t = edges[0].get("targetId")
+                        if no_t is None and len(edges) > 1:
+                            no_t = edges[1].get("targetId")
+
+                    yes_loops = yes_t is not None and self._reaches_node(yes_t, current_id)
+                    no_loops = no_t is not None and self._reaches_node(no_t, current_id)
+
+                    if yes_loops or no_loops:
+                        # La rama que cicla es el cuerpo; la otra es la salida.
+                        if yes_loops:
+                            body_target, after_target = yes_t, no_t
+                        else:
+                            body_target, after_target = no_t, yes_t
+                        cond_type = "while"
+
+                if cond_type == "while":
+                    if body_target is None:
+                        body_target = self.branch_target(current_id, "yes")
+                        after_target = self.branch_target(current_id, "no")
+                        if body_target is None:
+                            edges = self.out_edges(current_id)
+                            if edges:
+                                body_target = edges[0].get("targetId")
+                            if len(edges) > 1:
+                                after_target = edges[1].get("targetId")
                     cuerpo = self.build_block(body_target, stop_at | ({current_id} if body_target else set()))
                     instrucciones.append(NodoWhile(condicion, cuerpo))
                     current_id = after_target

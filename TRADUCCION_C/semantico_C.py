@@ -251,7 +251,10 @@ class AnalizadorSemantico:
 
     def analizar_y_recolectar(self, programa):
         self.errores = []
-        self.analizar(programa)
+        try:
+            self.analizar(programa)
+        except Exception as exc:
+            self.errores.append(str(exc))
         return list(self.errores)
 
     def analizar(self, nodo) -> str:

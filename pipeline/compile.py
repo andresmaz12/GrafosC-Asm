@@ -89,7 +89,7 @@ def main() -> int:
 
         sem = AnalizadorSemantico()
         sem_errors = sem.analizar_y_recolectar(programa)
-        warnings.extend(sem_errors)
+        errors.extend(sem_errors)
 
         try:
             c_code = programa.generarCodigoC()
