@@ -22,7 +22,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "TRADUCCION_C"))
 
-from AST_C import (  # noqa: E402
+from TRADUCCION_C.AST_C import ( 
     NodoPrograma, NodoFuncion, NodoParametro, NodoAsignacion, NodoReasignacion,
     NodoOperacion, NodoIdent, NodoNumero, NodoString, NodoLlamadaFuncion,
     NodoCondicional, NodoWhile, NodoRetorno, NodoImprimir, NodoIncremento,

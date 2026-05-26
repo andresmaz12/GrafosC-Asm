@@ -36,7 +36,7 @@ sys.path.insert(0, os.path.join(ROOT, "TRADUCCION_C"))
 sys.path.insert(0, os.path.join(ROOT, "pipeline"))
 
 from flowchart_to_c import build_program  # noqa: E402
-from semantico_C import AnalizadorSemantico  # noqa: E402
+from TRADUCCION_C.semantico_C import AnalizadorSemantico  # noqa: E402
 
 
 _SAFE_NAME = re.compile(r"[^a-zA-Z0-9_-]+")
