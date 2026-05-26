@@ -37,6 +37,7 @@ sys.path.insert(0, os.path.join(ROOT, "pipeline"))
 
 from flowchart_to_c import build_program  # noqa: E402
 from TRADUCCION_C.semantico_C import AnalizadorSemantico  # noqa: E402
+from assembler import assemble_and_link  # noqa: E402
 
 
 _SAFE_NAME = re.compile(r"[^a-zA-Z0-9_-]+")
@@ -104,7 +105,20 @@ def main() -> int:
         if c_code:
             files["c"] = _write(os.path.join(ROOT, "GrafosC-Asm", f"{project_name}.c"), c_code)
         if asm_code:
-            files["asm"] = _write(os.path.join(ROOT, "GrafosC-Asm", f"{project_name}.asm"), asm_code)
+            asm_abs = os.path.join(ROOT, "GrafosC-Asm", f"{project_name}.asm")
+            files["asm"] = _write(asm_abs, asm_code)
+
+            # --- Ensamblar y linkear con NASM + ld vía WSL ---
+            try:
+                asm_ok, elf_abs, asm_errors, asm_warnings = assemble_and_link(asm_abs)
+                warnings.extend(asm_warnings)
+                if asm_ok:
+                    files["elf"] = os.path.relpath(elf_abs, ROOT).replace(os.sep, "/")
+                else:
+                    errors.extend(asm_errors)
+            except Exception as exc:
+                warnings.append(f"Ensamblador: error inesperado — {exc}")
+
         if mermaid_in:
             files["mermaid"] = _write(os.path.join(ROOT, "MERMAID", f"{project_name}.md"), mermaid_in)
 
