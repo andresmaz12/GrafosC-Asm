@@ -20,7 +20,9 @@ import re
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "TRADUCCION_C"))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "TRADUCCION_C"))
 
 from TRADUCCION_C.AST_C import ( 
     NodoPrograma, NodoFuncion, NodoParametro, NodoAsignacion, NodoReasignacion,

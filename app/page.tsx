@@ -47,6 +47,8 @@ import type {
 const generateId = () => Math.random().toString(36).substring(2, 9)
 
 export default function CompiladorPage() {
+  const [mounted, setMounted] = useState(false)
+  
   // Estado del proyecto actual
   const [currentProject, setCurrentProject] = useState<Project | null>(null)
   const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false)
@@ -79,6 +81,7 @@ export default function CompiladorPage() {
       if (project) {
         setCurrentProject(project)
         setFlowchartState(project.flowchartState)
+        setMounted(true)
         return
       }
     }
@@ -93,6 +96,7 @@ export default function CompiladorPage() {
     } else {
       setIsProjectManagerOpen(true)
     }
+    setMounted(true)
   }, [])
 
   // Obtener nodo seleccionado
@@ -355,6 +359,25 @@ export default function CompiladorPage() {
     addEchoMessage('info', 'Configuracion en desarrollo')
   }, [addEchoMessage])
 
+  // Manejar subida de archivo Mermaid
+  const handleUploadMermaid = useCallback((newState: FlowchartState, filename: string) => {
+    setFlowchartState(newState)
+    setSelectedConnectionId(null)
+    setMermaidCode('') // o setMermaidCode del texto original si quisieramos
+    addEchoMessage('success', `Diagrama Mermaid cargado desde ${filename}. Nodos: ${newState.nodes.length}`)
+  }, [addEchoMessage])
+
+  if (!mounted) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background text-muted-foreground font-medium">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary border-t-transparent" />
+          <span>Cargando compilador...</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Header */}
@@ -363,6 +386,7 @@ export default function CompiladorPage() {
         onSave={handleSave}
         onLoad={handleLoad}
         onSettings={handleSettings}
+        onUploadMermaid={handleUploadMermaid}
         isCompiling={isCompiling}
         projectName={currentProject?.name || 'Sin proyecto'}
       />

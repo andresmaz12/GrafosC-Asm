@@ -31,9 +31,11 @@ import re
 import sys
 import traceback
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, os.path.join(ROOT, "TRADUCCION_C"))
-sys.path.insert(0, os.path.join(ROOT, "pipeline"))
+BACKEND_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(BACKEND_ROOT, ".."))
+sys.path.insert(0, BACKEND_ROOT)
+sys.path.insert(0, os.path.join(BACKEND_ROOT, "TRADUCCION_C"))
+sys.path.insert(0, os.path.join(BACKEND_ROOT, "pipeline"))
 
 from flowchart_to_c import build_program  # noqa: E402
 from TRADUCCION_C.semantico_C import AnalizadorSemantico  # noqa: E402
@@ -53,7 +55,7 @@ def _write(path: str, contents: str) -> str:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(contents)
-    return os.path.relpath(path, ROOT).replace(os.sep, "/")
+    return os.path.relpath(path, PROJECT_ROOT).replace(os.sep, "/")
 
 
 def _emit(payload):
@@ -103,9 +105,9 @@ def main() -> int:
             errors.append(f"Error generando ASM: {exc}")
 
         if c_code:
-            files["c"] = _write(os.path.join(ROOT, "GrafosC-Asm", f"{project_name}.c"), c_code)
+            files["c"] = _write(os.path.join(PROJECT_ROOT, "outputs", "GrafosC-Asm", f"{project_name}.c"), c_code)
         if asm_code:
-            asm_abs = os.path.join(ROOT, "GrafosC-Asm", f"{project_name}.asm")
+            asm_abs = os.path.join(PROJECT_ROOT, "outputs", "GrafosC-Asm", f"{project_name}.asm")
             files["asm"] = _write(asm_abs, asm_code)
 
             # --- Ensamblar y linkear con NASM + ld vía WSL ---
@@ -113,14 +115,14 @@ def main() -> int:
                 asm_ok, elf_abs, asm_errors, asm_warnings = assemble_and_link(asm_abs)
                 warnings.extend(asm_warnings)
                 if asm_ok:
-                    files["elf"] = os.path.relpath(elf_abs, ROOT).replace(os.sep, "/")
+                    files["elf"] = os.path.relpath(elf_abs, PROJECT_ROOT).replace(os.sep, "/")
                 else:
                     errors.extend(asm_errors)
             except Exception as exc:
                 warnings.append(f"Ensamblador: error inesperado — {exc}")
 
         if mermaid_in:
-            files["mermaid"] = _write(os.path.join(ROOT, "MERMAID", f"{project_name}.md"), mermaid_in)
+            files["mermaid"] = _write(os.path.join(PROJECT_ROOT, "outputs", "MERMAID", f"{project_name}.md"), mermaid_in)
 
     except Exception as exc:
         errors.append(f"Error interno: {exc}")

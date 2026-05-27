@@ -29,7 +29,7 @@ export {
 export type { Point } from './connection-utils'
 
 // Mermaid generator
-export { generateMermaidCode, validateMermaidDiagram, getValidNodes } from './mermaid'
+export { generateMermaidCode, validateMermaidDiagram, getValidNodes, parseMermaidToState } from './mermaid'
 
 // Storage
 export {

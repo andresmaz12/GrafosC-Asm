@@ -34,7 +34,7 @@ interface CompileResponse {
 
 function runPython(payload: string): Promise<{ stdout: string; stderr: string; code: number }> {
   const cwd = process.cwd()
-  const script = path.join(cwd, 'pipeline', 'compile.py')
+  const script = path.join(cwd, 'backend', 'pipeline', 'compile.py')
 
   return new Promise((resolve, reject) => {
     let lastError: Error | null = null

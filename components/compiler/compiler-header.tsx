@@ -6,16 +6,19 @@
 // Barra superior con titulo y boton de compilacion
 
 import { cn } from '@/lib/utils'
-import { Play, Settings, Save, FolderOpen, Info } from 'lucide-react'
+import { Play, Settings, Save, FolderOpen, Info, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Spinner } from '@/components/ui/spinner'
+import { useRef } from 'react'
+import { parseMermaidToState, type FlowchartState } from '@/lib/compiler'
 
 interface CompilerHeaderProps {
   onCompile: () => void
   onSave: () => void
   onLoad: () => void
   onSettings: () => void
+  onUploadMermaid?: (state: FlowchartState, filename: string) => void
   isCompiling: boolean
   projectName: string
   className?: string
@@ -26,10 +29,37 @@ export function CompilerHeader({
   onSave,
   onLoad,
   onSettings,
+  onUploadMermaid,
   isCompiling,
   projectName,
   className
 }: CompilerHeaderProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const text = await file.text()
+      const newState = parseMermaidToState(text)
+      if (onUploadMermaid) {
+        onUploadMermaid(newState, file.name)
+      }
+    } catch (error) {
+      console.error("Error parsing Mermaid file", error)
+    } finally {
+      // Reset input so the same file can be uploaded again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       <header 
@@ -52,6 +82,27 @@ export function CompilerHeader({
 
         {/* Center section - Project actions */}
         <div className="flex items-center gap-1">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            accept=".md,.txt,.mermaid" 
+            className="hidden" 
+          />
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={handleUploadClick}
+              >
+                <Upload className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Subir Mermaid</TooltipContent>
+          </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
