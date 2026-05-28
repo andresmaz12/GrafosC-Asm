@@ -1,0 +1,147 @@
+{
+  "id": "test-auxiliary-functions",
+  "name": "Funciones Auxiliares",
+  "createdAt": "2026-05-28T08:00:00Z",
+  "updatedAt": "2026-05-28T08:00:00Z",
+  "flowchartState": {
+    "nodes": [
+      {
+        "id": "start-sep",
+        "type": "start-end",
+        "position": { "x": 100, "y": 50 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Inicio imprimir_separador()",
+        "connections": [],
+        "data": {
+          "functionName": "imprimir_separador",
+          "parameters": [],
+          "isStart": true
+        }
+      },
+      {
+        "id": "print-sep",
+        "type": "process",
+        "position": { "x": 80, "y": 150 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: ====================",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "===================="
+        }
+      },
+      {
+        "id": "return-sep",
+        "type": "return",
+        "position": { "x": 100, "y": 250 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Retornar 0",
+        "connections": [],
+        "data": {
+          "returnValue": "0"
+        }
+      },
+      {
+        "id": "start-main",
+        "type": "start-end",
+        "position": { "x": 450, "y": 50 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Inicio main()",
+        "connections": [],
+        "data": {
+          "functionName": "main",
+          "parameters": [],
+          "isStart": true
+        }
+      },
+      {
+        "id": "call-sep1",
+        "type": "subprocess",
+        "position": { "x": 430, "y": 150 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Llamar imprimir_separador()",
+        "connections": [],
+        "data": {
+          "functionName": "imprimir_separador",
+          "arguments": []
+        }
+      },
+      {
+        "id": "print-msg",
+        "type": "process",
+        "position": { "x": 430, "y": 250 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: ¡Hola desde main!",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "¡Hola desde main!"
+        }
+      },
+      {
+        "id": "call-sep2",
+        "type": "subprocess",
+        "position": { "x": 430, "y": 350 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Llamar imprimir_separador()",
+        "connections": [],
+        "data": {
+          "functionName": "imprimir_separador",
+          "arguments": []
+        }
+      },
+      {
+        "id": "return-main",
+        "type": "return",
+        "position": { "x": 450, "y": 450 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Retornar 0",
+        "connections": [],
+        "data": {
+          "returnValue": "0"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c-sep-1",
+        "sourceId": "start-sep",
+        "targetId": "print-sep",
+        "type": "default"
+      },
+      {
+        "id": "c-sep-2",
+        "sourceId": "print-sep",
+        "targetId": "return-sep",
+        "type": "default"
+      },
+      {
+        "id": "c-main-1",
+        "sourceId": "start-main",
+        "targetId": "call-sep1",
+        "type": "default"
+      },
+      {
+        "id": "c-main-2",
+        "sourceId": "call-sep1",
+        "targetId": "print-msg",
+        "type": "default"
+      },
+      {
+        "id": "c-main-3",
+        "sourceId": "print-msg",
+        "targetId": "call-sep2",
+        "type": "default"
+      },
+      {
+        "id": "c-main-4",
+        "sourceId": "call-sep2",
+        "targetId": "return-main",
+        "type": "default"
+      }
+    ],
+    "selectedNodeId": null,
+    "zoom": 1,
+    "pan": { "x": 0, "y": 0 }
+  }
+}

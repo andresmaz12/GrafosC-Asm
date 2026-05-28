@@ -1,0 +1,127 @@
+{
+  "id": "test-mi-primer-proyecto",
+  "name": "Mi Primer Proyecto",
+  "createdAt": "2026-05-28T08:00:00Z",
+  "updatedAt": "2026-05-28T08:00:00Z",
+  "flowchartState": {
+    "nodes": [
+      {
+        "id": "811uaji",
+        "type": "start-end",
+        "position": { "x": 350, "y": 50 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Inicio main()",
+        "connections": [],
+        "data": {
+          "functionName": "main",
+          "parameters": [],
+          "isStart": true
+        }
+      },
+      {
+        "id": "90edzng",
+        "type": "input-output",
+        "position": { "x": 340, "y": 140 },
+        "size": { "width": 160, "height": 60 },
+        "content": "int edad = 0",
+        "connections": [],
+        "data": {
+          "mode": "declare",
+          "variable": {
+            "name": "edad",
+            "type": "int",
+            "value": "0"
+          }
+        }
+      },
+      {
+        "id": "kws4vgf",
+        "type": "process",
+        "position": { "x": 330, "y": 230 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: Ingresa tu edad:",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "Ingresa tu edad:"
+        }
+      },
+      {
+        "id": "l2latch",
+        "type": "input-output",
+        "position": { "x": 340, "y": 320 },
+        "size": { "width": 160, "height": 60 },
+        "content": "scanf(edad)",
+        "connections": [],
+        "data": {
+          "mode": "scanf",
+          "variable": {
+            "name": "edad",
+            "type": "int",
+            "value": "0"
+          }
+        }
+      },
+      {
+        "id": "uhhfy65",
+        "type": "process",
+        "position": { "x": 330, "y": 410 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: tu tienes {edad} años",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "tu tienes {edad} años"
+        }
+      },
+      {
+        "id": "br9ibjy",
+        "type": "start-end",
+        "position": { "x": 350, "y": 500 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Fin main()",
+        "connections": [],
+        "data": {
+          "functionName": "main",
+          "parameters": [],
+          "isStart": false
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "sourceId": "811uaji",
+        "targetId": "90edzng",
+        "type": "default"
+      },
+      {
+        "id": "c2",
+        "sourceId": "90edzng",
+        "targetId": "kws4vgf",
+        "type": "default"
+      },
+      {
+        "id": "c3",
+        "sourceId": "kws4vgf",
+        "targetId": "l2latch",
+        "type": "default"
+      },
+      {
+        "id": "c4",
+        "sourceId": "l2latch",
+        "targetId": "uhhfy65",
+        "type": "default"
+      },
+      {
+        "id": "c5",
+        "sourceId": "uhhfy65",
+        "targetId": "br9ibjy",
+        "type": "default"
+      }
+    ],
+    "selectedNodeId": null,
+    "zoom": 1,
+    "pan": { "x": 0, "y": 0 }
+  }
+}

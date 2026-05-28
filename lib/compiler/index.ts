@@ -44,5 +44,8 @@ export {
   setCurrentProjectId,
   saveMermaidCode,
   exportProject,
-  importProject
+  importProject,
+  TEMPLATES
 } from './storage'
+
+export type { TemplateType, TemplateDefinition } from './storage'

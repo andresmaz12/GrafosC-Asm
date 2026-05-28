@@ -24,16 +24,46 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "TRADUCCION_C"))
 
-from TRADUCCION_C.AST_C import ( 
+from AST_C import ( 
     NodoPrograma, NodoFuncion, NodoParametro, NodoAsignacion, NodoReasignacion,
     NodoOperacion, NodoIdent, NodoNumero, NodoString, NodoLlamadaFuncion,
-    NodoCondicional, NodoWhile, NodoRetorno, NodoImprimir, NodoIncremento,
+    NodoCondicional, NodoWhile, NodoRetorno, NodoImprimir, NodoIncremento, NodoFor,
+    NodoEntrada,
 )
 
 
 # ============================================================
 # Mini parser de expresiones (para campos de texto libre)
 # ============================================================
+
+_OP_PATTERN = re.compile(r"\s*(==|!=|<=|>=|\+|\-|\*|/|<|>)\s*")
+
+
+def _parse_init_or_increment(text):
+    if text is None:
+        return None
+    text = str(text).strip()
+    if not text:
+        return None
+    # i++ or i--
+    m_inc = re.match(r"^(\w+)\s*(\+\+|\-\-);?$", text)
+    if m_inc:
+        return NodoIncremento(("IDENTIFIER", m_inc.group(1)), ("OPERATOR", m_inc.group(2)))
+    # int i = 0
+    m_decl = re.match(r"^(int|float|char|bool|string)\s+(\w+)\s*=\s*(.*);?$", text)
+    if m_decl:
+        tipo = m_decl.group(1)
+        nombre = m_decl.group(2)
+        valor = m_decl.group(3).strip()
+        return NodoAsignacion(("KEYWORD", tipo), ("IDENTIFIER", nombre), _parse_expr(valor))
+    # i = 0
+    m_assign = re.match(r"^(\w+)\s*=\s*(.*);?$", text)
+    if m_assign:
+        nombre = m_assign.group(1)
+        valor = m_assign.group(2).strip()
+        return NodoReasignacion(("IDENTIFIER", nombre), _parse_expr(valor))
+    # Fallback
+    return _parse_expr(text)
 
 _OP_PATTERN = re.compile(r"\s*(==|!=|<=|>=|\+|\-|\*|/|<|>)\s*")
 
@@ -47,6 +77,8 @@ def _parse_expr(text):
     if text is None:
         return NodoNumero(("NUMBER", "0"))
     text = str(text).strip()
+    # Normalizar operadores unicode comunes a sintaxis estandar
+    text = text.replace("≤", "<=").replace("≥", ">=").replace("≠", "!=")
     if not text:
         return NodoNumero(("NUMBER", "0"))
 
@@ -181,7 +213,10 @@ class _Builder:
             if ntype == "process":
                 instr = _node_process(node)
                 if instr is not None:
-                    instrucciones.append(instr)
+                    if isinstance(instr, list):
+                        instrucciones.extend(instr)
+                    else:
+                        instrucciones.append(instr)
                 current_id = self.first_default_target(current_id)
                 continue
 
@@ -228,6 +263,25 @@ class _Builder:
                             body_target, after_target = no_t, yes_t
                         cond_type = "while"
 
+                if cond_type == "for":
+                    init_node = _parse_init_or_increment(data.get("init", ""))
+                    cond_node = _parse_expr(data.get("condition") or _strip_keyword(node.get("content", "")))
+                    inc_node = _parse_init_or_increment(data.get("increment", ""))
+
+                    body_target = self.branch_target(current_id, "yes")
+                    after_target = self.branch_target(current_id, "no")
+                    if body_target is None:
+                        edges = self.out_edges(current_id)
+                        if edges:
+                            body_target = edges[0].get("targetId")
+                        if len(edges) > 1:
+                            after_target = edges[1].get("targetId")
+
+                    cuerpo = self.build_block(body_target, stop_at | ({current_id} if body_target else set()))
+                    instrucciones.append(NodoFor(init_node, cond_node, inc_node, cuerpo))
+                    current_id = after_target
+                    continue
+
                 if cond_type == "while":
                     if body_target is None:
                         body_target = self.branch_target(current_id, "yes")
@@ -272,6 +326,7 @@ class _Builder:
 
 def _node_input_output(node):
     data = node.get("data") or {}
+    mode = data.get("mode", "declare")
     var = data.get("variable") or {}
     nombre = var.get("name", "")
     tipo = var.get("type", "")
@@ -279,24 +334,46 @@ def _node_input_output(node):
 
     # Dar prioridad al contenido visual (lo que el usuario escribio en la figura)
     content = (node.get("content") or "").strip()
-    if content:
+    
+    # Si el contenido visual tiene formato de scanf
+    m_scanf = re.match(r"scanf\s*\(\s*\"?([a-zA-Z_]\w*)\"?\s*\)", content)
+    if m_scanf:
+        mode = "scanf"
+        nombre = m_scanf.group(1)
+    elif content:
         # Intentar matchear "int x = 5"
         m = re.match(r"(int|float|char|bool|string)\s+(\w+)\s*=\s*(.*)", content)
         if m:
             tipo = m.group(1)
             nombre = m.group(2)
             valor = m.group(3).strip() or "0"
+            mode = "declare"
         else:
             # Intentar matchear "x = 5"
             m2 = re.match(r"(\w+)\s*=\s*(.*)", content)
             if m2 and m2.group(1) not in ("int", "float", "char", "bool", "string"):
                 nombre = m2.group(1)
                 valor = m2.group(2).strip() or "0"
+                mode = "declare"
 
     nombre = nombre or "var"
     tipo = tipo or "int"
-    valor = valor if valor is not None else "0"
+
+    if mode == "scanf":
+        fmt = '"%d"'
+        if tipo == "float":
+            fmt = '"%f"'
+        elif tipo == "char":
+            fmt = '"%c"'
+        elif tipo == "string":
+            fmt = '"%s"'
+        return NodoEntrada(
+            ("KEYWORD", tipo),
+            NodoString(("STRING", fmt)),
+            ("IDENTIFIER", nombre)
+        )
     
+    valor = valor if valor is not None else "0"
     return NodoAsignacion(("KEYWORD", tipo), ("IDENTIFIER", nombre), _parse_expr(valor))
 
 
@@ -304,12 +381,45 @@ def _node_process(node):
     data = node.get("data") or {}
     ptype = data.get("processType")
     if ptype == "print":
-        contenido = data.get("printContent") or ""
-        if contenido.startswith('"') and contenido.endswith('"'):
-            arg = NodoString(("STRING", contenido))
-        else:
-            arg = NodoString(("STRING", f'"{contenido}"'))
-        return NodoImprimir(("KEYWORD", "printf"), [arg])
+        contenido = (data.get("printContent") or "").strip()
+        
+        # Quitar comillas externas si existen
+        if (contenido.startswith('"') and contenido.endswith('"')) or (contenido.startswith("'") and contenido.endswith("'")):
+            contenido = contenido[1:-1]
+            
+        pattern = re.compile(r"\{([a-zA-Z_]\w*)\}")
+        
+        parts = []
+        last_idx = 0
+        for m in pattern.finditer(contenido):
+            text_part = contenido[last_idx:m.start()]
+            if text_part:
+                parts.append(NodoImprimir(("KEYWORD", "printf"), [NodoString(("STRING", f'"{text_part}"'))]))
+            
+            var_name = m.group(1)
+            parts.append(NodoImprimir(("KEYWORD", "printf"), [NodoIdent(("IDENTIFIER", var_name))]))
+            last_idx = m.end()
+            
+        text_part = contenido[last_idx:]
+        if text_part:
+            parts.append(NodoImprimir(("KEYWORD", "printf"), [NodoString(("STRING", f'"{text_part}"'))]))
+            
+        if not parts:
+            # Fallback a variable única / expresión sin comillas
+            if re.match(r"^[a-zA-Z_]\w*(?:\s*[\+\-\*/<>!=&\|]+\s*[a-zA-Z0-9_\.]+)*$", contenido):
+                return [
+                    NodoImprimir(("KEYWORD", "printf"), [_parse_expr(contenido)]),
+                    NodoImprimir(("KEYWORD", "printf"), [NodoString(("STRING", '"\\n"'))])
+                ]
+            else:
+                # Asegurar salto de línea al final de cadenas estáticas
+                if not contenido.endswith("\\n"):
+                    contenido += "\\n"
+                return NodoImprimir(("KEYWORD", "printf"), [NodoString(("STRING", f'"{contenido}"'))])
+                
+        # Asegurar salto de línea al final de impresiones con interpolación
+        parts.append(NodoImprimir(("KEYWORD", "printf"), [NodoString(("STRING", '"\\n"'))]))
+        return parts
     if ptype == "assign":
         nombre = data.get("variableName") or "x"
         return NodoReasignacion(("IDENTIFIER", nombre), _parse_expr(data.get("value")))

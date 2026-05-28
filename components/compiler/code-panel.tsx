@@ -7,7 +7,11 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
-import { Code2, Cpu, Copy, Check, Download, Terminal, Trash2, ChevronDown, ChevronUp, GitBranch } from 'lucide-react'
+import { 
+  Code2, Cpu, Copy, Check, Download, Terminal, Trash2, 
+  ChevronDown, ChevronUp, GitBranch, Play, Loader2,
+  CheckCircle2, XCircle, AlertTriangle, Wifi, WifiOff
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -27,6 +31,15 @@ export interface EchoMessage {
   timestamp: Date
 }
 
+export type ElfStatus = 'idle' | 'building' | 'ready' | 'error'
+
+export interface PrereqStatus {
+  wsl: boolean
+  nasm: boolean
+  ld: boolean
+  install_hint?: string
+}
+
 interface CodePanelProps {
   cCode: string
   assemblyCode: string
@@ -34,6 +47,13 @@ interface CodePanelProps {
   echoMessages: EchoMessage[]
   onClearEcho: () => void
   className?: string
+  // ELF / Ensamblado
+  elfStatus?: ElfStatus
+  nasmLog?: string
+  ldLog?: string
+  elfPath?: string
+  prereqStatus?: PrereqStatus | null
+  onExecute?: () => void
 }
 
 export function CodePanel({ 
@@ -42,11 +62,18 @@ export function CodePanel({
   mermaidCode,
   echoMessages,
   onClearEcho,
-  className 
+  className,
+  elfStatus = 'idle',
+  nasmLog,
+  ldLog,
+  elfPath,
+  prereqStatus,
+  onExecute,
 }: CodePanelProps) {
   const [copiedTab, setCopiedTab] = useState<'c' | 'asm' | 'mermaid' | null>(null)
   const [isEchoExpanded, setIsEchoExpanded] = useState(true)
   const [echoHeight, setEchoHeight] = useState(160)
+  const [showAsmLog, setShowAsmLog] = useState(false)
   
   // Download Dialog State
   const [isDownloadOpen, setIsDownloadOpen] = useState(false)
@@ -226,9 +253,64 @@ export function CodePanel({
 
           {/* Assembly Code Tab */}
           <TabsContent value="asm" className="flex-1 m-0 flex flex-col min-h-0">
+            {/* Cabecera con badge ELF y controles */}
             <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-code-bg">
-              <span className="text-xs font-medium text-muted-foreground">main.asm</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">main.asm</span>
+                {/* Badge de estado ELF */}
+                {elfStatus === 'building' && (
+                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">
+                    <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                    Ensamblando...
+                  </span>
+                )}
+                {elfStatus === 'ready' && (
+                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">
+                    <CheckCircle2 className="h-2.5 w-2.5" />
+                    ELF listo
+                  </span>
+                )}
+                {elfStatus === 'error' && (
+                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/15 text-destructive">
+                    <XCircle className="h-2.5 w-2.5" />
+                    Error ASM
+                  </span>
+                )}
+                {/* Indicadores de prerequisitos */}
+                {prereqStatus && (
+                  <div className="flex items-center gap-1 ml-1">
+                    <span
+                      title={prereqStatus.wsl ? 'WSL2 disponible' : 'WSL2 no encontrado'}
+                      className={cn(
+                        'text-[9px] px-1 py-0.5 rounded font-mono',
+                        prereqStatus.wsl ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                      )}
+                    >
+                      WSL
+                    </span>
+                    <span
+                      title={prereqStatus.nasm ? 'NASM disponible' : 'NASM no instalado'}
+                      className={cn(
+                        'text-[9px] px-1 py-0.5 rounded font-mono',
+                        prereqStatus.nasm ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                      )}
+                    >
+                      nasm
+                    </span>
+                    <span
+                      title={prereqStatus.ld ? 'ld disponible' : 'ld (binutils) no instalado'}
+                      className={cn(
+                        'text-[9px] px-1 py-0.5 rounded font-mono',
+                        prereqStatus.ld ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                      )}
+                    >
+                      ld
+                    </span>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-1">
+                {/* Botón copiar ASM */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button 
@@ -246,6 +328,7 @@ export function CodePanel({
                   </TooltipTrigger>
                   <TooltipContent>Copiar codigo</TooltipContent>
                 </Tooltip>
+                {/* Botón descargar ASM */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button 
@@ -259,8 +342,51 @@ export function CodePanel({
                   </TooltipTrigger>
                   <TooltipContent>Descargar archivo</TooltipContent>
                 </Tooltip>
+                {/* Botón toggle log NASM */}
+                {(nasmLog || ldLog) && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => setShowAsmLog(v => !v)}
+                      >
+                        <Terminal className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Ver log de NASM/ld</TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             </div>
+
+            {/* Log de NASM + ld (colapsable) */}
+            {showAsmLog && (nasmLog || ldLog) && (
+              <div className="border-b border-border bg-[#0d1117] p-2 font-mono text-[11px] max-h-32 overflow-auto">
+                {nasmLog && (
+                  <div>
+                    <span className="text-primary font-semibold">[NASM] </span>
+                    <span className="text-[#e6edf3] whitespace-pre-wrap">{nasmLog}</span>
+                  </div>
+                )}
+                {ldLog && (
+                  <div className="mt-1">
+                    <span className="text-primary font-semibold">[ld] </span>
+                    <span className="text-[#e6edf3] whitespace-pre-wrap">{ldLog}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Hint de instalación si faltan prerequisitos */}
+            {prereqStatus && (!prereqStatus.wsl || !prereqStatus.nasm || !prereqStatus.ld) && prereqStatus.install_hint && (
+              <div className="flex items-start gap-2 px-3 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-400 text-[11px]">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <pre className="whitespace-pre-wrap font-mono">{prereqStatus.install_hint}</pre>
+              </div>
+            )}
+
             <div className="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar bg-code-bg p-3">
               {assemblyCode ? (
                 renderCodeWithLineNumbers(assemblyCode)
@@ -415,7 +541,7 @@ export function CodePanel({
 
       {/* Download Dialog */}
       <Dialog open={isDownloadOpen} onOpenChange={setIsDownloadOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Descargar archivo</DialogTitle>
           </DialogHeader>

@@ -15,12 +15,20 @@ Response (stdout)::
         "cCode": "...",
         "asmCode": "...",
         "mermaidCode": "...",
+        "elfPath": "outputs/GrafosC-Asm/bin/<proj>",  # relativo a PROJECT_ROOT
+        "nasmLog": "...",     # salida completa de NASM
+        "ldLog": "...",       # salida completa de ld
+        "asmElapsedMs": 0,    # ms que tardó el ensamblado
+        "prereq": { "wsl": bool, "nasm": bool, "ld": bool, ... },
         "errors": [...],
         "warnings": [...],
-        "files": { "c": "GrafosC-Asm/<proj>.c", "asm": "...", "mermaid": "..." }
+        "files": { "c": "outputs/GrafosC-Asm/<proj>.c", "asm": "...",
+                   "obj": "...", "elf": "...", "mermaid": "..." }
     }
 
 Si la traduccion falla, se retorna ``ok=false`` y la lista de errores.
+El ensamblado (nasm + ld via WSL2) es no-fatal: si WSL no está disponible
+el compilador sigue retornando ok=true con el código C y ASM generados.
 """
 
 from __future__ import annotations
@@ -95,6 +103,7 @@ def main() -> int:
     c_code = ""
     asm_code = ""
     files: dict[str, str] = {}
+    asm_result = None
 
     try:
         programa, build_warnings = build_program(flowchart_state)
@@ -116,25 +125,34 @@ def main() -> int:
 
         if c_code:
             files["c"] = _write(os.path.join(PROJECT_ROOT, "outputs", "GrafosC-Asm", f"{project_name}.c"), c_code)
-        if asm_code:
+        if asm_code and not errors:
             asm_abs = os.path.join(PROJECT_ROOT, "outputs", "GrafosC-Asm", f"{project_name}.asm")
             files["asm"] = _write(asm_abs, asm_code)
 
-            # --- Ensamblar y linkear con NASM + ld vía WSL ---
+            # --- Ensamblar y linkear con NASM + ld vía WSL2 (no-fatal) ---
+            asm_result: dict = {}
             try:
-                asm_ok, elf_abs, asm_errors, asm_warnings = assemble_and_link(asm_abs)
-                warnings.extend(asm_warnings)
-                if asm_ok:
+                bin_dir = os.path.join(PROJECT_ROOT, "outputs", "GrafosC-Asm", "bin")
+                asm_result = assemble_and_link(asm_abs, output_dir=bin_dir)
+                warnings.extend(asm_result.get("warnings", []))
+                if asm_result.get("ok"):
+                    elf_abs = asm_result["elf_path"]
                     files["elf"] = os.path.relpath(elf_abs, PROJECT_ROOT).replace(os.sep, "/")
+                    if asm_result.get("obj_path"):
+                        files["obj"] = os.path.relpath(asm_result["obj_path"], PROJECT_ROOT).replace(os.sep, "/")
                 else:
                     # NASM/ld no disponible o falló — no es error fatal,
                     # el .c y .asm ya se generaron correctamente.
-                    warnings.extend(asm_errors)
+                    for err in asm_result.get("errors", []):
+                        warnings.append(f"[Ensamblador] {err}")
             except Exception as exc:
                 warnings.append(f"Ensamblador: error inesperado — {exc}")
 
         if mermaid_in:
-            files["mermaid"] = _write(os.path.join(PROJECT_ROOT, "outputs", "MERMAID", f"{project_name}.md"), mermaid_in)
+            md_content = mermaid_in
+            if not md_content.strip().startswith("```"):
+                md_content = f"```mermaid\n{md_content.strip()}\n```\n"
+            files["mermaid"] = _write(os.path.join(PROJECT_ROOT, "outputs", "MERMAID", f"{project_name}.md"), md_content)
 
     except Exception as exc:
         errors.append(f"Error interno: {exc}")
@@ -145,6 +163,12 @@ def main() -> int:
         "cCode": c_code,
         "asmCode": asm_code,
         "mermaidCode": mermaid_in,
+        # Datos de ensamblado (vacíos si WSL no disponible o ASM no generado)
+        "elfPath": files.get("elf", ""),
+        "nasmLog": asm_result.get("nasm_log", "") if asm_result else "",
+        "ldLog": asm_result.get("ld_log", "") if asm_result else "",
+        "asmElapsedMs": asm_result.get("elapsed_ms", 0) if asm_result else 0,
+        "prereq": asm_result.get("prereq", {}) if asm_result else {},
         "errors": errors,
         "warnings": warnings,
         "files": files,

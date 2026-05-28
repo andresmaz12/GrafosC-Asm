@@ -16,3 +16,6 @@ export {
   exportProject,
   importProject
 } from './project-storage'
+
+export { TEMPLATES } from './templates'
+export type { TemplateType, TemplateDefinition } from './templates'

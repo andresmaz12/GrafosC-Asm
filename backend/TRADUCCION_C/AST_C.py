@@ -79,11 +79,12 @@ class NodoPrograma(NodoAST):
 
     def generarCodigoC(self) -> str:
         partes = [
-            "// ============================================",
-            "// Codigo generado por Compilador",
-            "// ============================================",
+            "// ============================================================",
+            "//   Código C Generado por el Compilador GrafosC-Asm",
+            "// ============================================================",
             "#include <stdio.h>",
             "#include <stdlib.h>",
+            "#include <stdbool.h>",
             "",
         ]
         for funcion in self.funciones:
@@ -94,8 +95,19 @@ class NodoPrograma(NodoAST):
         return "\n".join(partes).rstrip() + "\n"
 
     def generarCodigo(self) -> str:
-        codigo = ["section .text", "global _start"]
-        data = ["section .bss"]
+        codigo = [
+            "; -------------------------------------------------------------",
+            "; Sección de Código (Instrucciones)",
+            "; -------------------------------------------------------------",
+            "section .text",
+            "    global _start"
+        ]
+        data = [
+            "; -------------------------------------------------------------",
+            "; Sección de Variables Globales (Datos No Inicializados)",
+            "; -------------------------------------------------------------",
+            "section .bss"
+        ]
 
         # Recolectar strings
         strings = []
@@ -107,7 +119,12 @@ class NodoPrograma(NodoAST):
         # Asignar etiquetas únicas y generar sección .data
         data_sec = []
         if strings:
-            data_sec.append("section .data")
+            data_sec.extend([
+                "; -------------------------------------------------------------",
+                "; Sección de Datos de Solo Lectura (Constantes y Cadenas)",
+                "; -------------------------------------------------------------",
+                "section .data"
+            ])
             for idx, s_node in enumerate(strings):
                 lbl = f"str_{idx}"
                 s_node.label = lbl
@@ -119,10 +136,12 @@ class NodoPrograma(NodoAST):
                     valor = valor[1:-1]
                 
                 # Usamos comillas invertidas en NASM para procesar escapes estilo C
-                data_sec.append(f"    {lbl} db `{valor}`, 0")
-                data_sec.append(f"    {lbl}_len equ $ - {lbl} - 1")
+                lbl_len = lbl + "_len"
+                data_sec.append(f"    {lbl.ljust(15)} db `{valor}`, 0")
+                data_sec.append(f"    {lbl_len.ljust(15)} equ $ - {lbl} - 1")
 
         for funcion in self.funciones:
+            codigo.append("")
             codigo.append(funcion.generarCodigo())
             for var in funcion.variables_declaradas():
                 self.variables.append(var)
@@ -131,24 +150,38 @@ class NodoPrograma(NodoAST):
             for var in self.main.variables_declaradas():
                 self.variables.append(var)
 
-            codigo.append("_start:")
-            codigo.append(_indent(self.main.generarCodigo(), 1))
-            codigo.append("    mov eax, 1      ; syscall exit")
-            codigo.append("    xor ebx, ebx    ; codigo de salida 0")
-            codigo.append("    int 0x80")
+            codigo.append("")
+            codigo.append(self.main.generarCodigo())
+
+            codigo.extend([
+                "",
+                "; -------------------------------------------------------------",
+                "; Punto de Entrada del Programa (_start)",
+                "; -------------------------------------------------------------",
+                "_start:",
+                f"    call    {self.main._nombre().ljust(15)} ; Llamar a la función principal main",
+                f"    mov     ebx, eax        ; Guardar código de salida en ebx",
+                f"    mov     eax, 1          ; Syscall: sys_exit",
+                f"    int     0x80            ; Invocar syscall de Linux"
+            ])
 
         for variable in self.variables:
             tipo, nombre = variable
             if tipo in ("int", "bool"):
-                data.append(f"    {nombre}: resd 1")
+                data.append(f"    {nombre.ljust(15)} resd 1")
             elif tipo == "char":
-                data.append(f"    {nombre}: resb 1")
+                data.append(f"    {nombre.ljust(15)} resb 1")
             elif tipo == "float":
-                data.append(f"    {nombre}: resd 1")
+                data.append(f"    {nombre.ljust(15)} resd 1")
             else:
-                data.append(f"    {nombre}: resd 1")
+                data.append(f"    {nombre.ljust(15)} resd 1")
 
-        partes = []
+        partes = [
+            "; =============================================================================",
+            ";       Código Ensamblador x86 (NASM 32-bit)",
+            ";       Generado automáticamente por el Compilador GrafosC-Asm",
+            "; =============================================================================\n"
+        ]
         if data_sec:
             partes.append("\n".join(data_sec))
         partes.append("\n".join(data))
@@ -186,17 +219,28 @@ class NodoFuncion(NodoAST):
         params = ", ".join(
             f"{_tok_value(p.tipo)} {_tok_value(p.nombre)}" for p in self.parametros
         )
-        cabecera = f"{self._tipo()} {self._nombre()}({params}) {{"
+        cabecera = f"/* --- Función: {self._nombre()} --- */\n{self._tipo()} {self._nombre()}({params}) {{"
         cuerpo = "\n".join(_indent(c.generarCodigoC(), 1) for c in self.cuerpo)
         return cabecera + "\n" + cuerpo + "\n}"
 
     def generarCodigo(self) -> str:
-        codigo = [f"{self._nombre()}:"]
-        for parametro in self.parametros:
-            codigo.append("    pop     eax")
-            codigo.append(f"    mov     [{_tok_value(parametro.nombre)}], eax")
+        nombre = self._nombre()
+        codigo = [
+            "; -------------------------------------------------------------",
+            f"; Función: {nombre}",
+            "; -------------------------------------------------------------",
+            f"{nombre}:"
+        ]
+        if self.parametros:
+            codigo.append("    ; --- Recuperar parámetros de la pila ---")
+            for parametro in self.parametros:
+                codigo.append("    pop     eax")
+                codigo.append(f"    mov     [{_tok_value(parametro.nombre)}], eax")
+            codigo.append("")
+
         for c in self.cuerpo:
             codigo.append(_indent(c.generarCodigo(), 1))
+            
         codigo.append("    ret")
         return "\n".join(codigo)
 
@@ -231,9 +275,13 @@ class NodoAsignacion(NodoAST):
 
     def generarCodigo(self) -> str:
         nombre = _tok_value(self.nombre)
-        codigo = self.expresion.generarCodigo() if self.expresion is not None else "    mov     eax, 0"
-        codigo += f"\n    mov     [{nombre}], eax"
-        return codigo
+        expr_asm = self.expresion.generarCodigo() if self.expresion is not None else "    mov     eax, 0"
+        codigo = [
+            f"    ; --- asignación: {nombre} = expr ---",
+            expr_asm,
+            f"    mov     [{nombre}], eax"
+        ]
+        return "\n".join(codigo)
 
 
 class NodoReasignacion(NodoAST):
@@ -250,9 +298,13 @@ class NodoReasignacion(NodoAST):
 
     def generarCodigo(self) -> str:
         nombre = _tok_value(self.nombre)
-        codigo = self.expresion.generarCodigo() if self.expresion is not None else "    mov     eax, 0"
-        codigo += f"\n    mov     [{nombre}], eax"
-        return codigo
+        expr_asm = self.expresion.generarCodigo() if self.expresion is not None else "    mov     eax, 0"
+        codigo = [
+            f"    ; --- reasignación: {nombre} = expr ---",
+            expr_asm,
+            f"    mov     [{nombre}], eax"
+        ]
+        return "\n".join(codigo)
 
 
 # ============================================================
@@ -272,7 +324,7 @@ class NodoOperacion(NodoAST):
         return f"({self.izquierda.generarCodigoC()} {self._op()} {self.derecha.generarCodigoC()})"
 
     def generarCodigo(self) -> str:
-        codigo = []
+        codigo = [f"    ; --- operación: {self._op()} ---"]
         codigo.append(self.izquierda.generarCodigo())
         codigo.append("    push    eax")
         codigo.append(self.derecha.generarCodigo())
@@ -334,8 +386,9 @@ class NodoRetorno(NodoAST):
 
     def generarCodigo(self) -> str:
         if self.expresion is None:
-            return "    ; return"
-        return self.expresion.generarCodigo()
+            return "    ; --- retorno sin valor ---"
+        expr_asm = self.expresion.generarCodigo()
+        return f"    ; --- retorno de expresión ---\n{expr_asm}"
 
 
 class NodoIdent(NodoAST):
@@ -404,17 +457,28 @@ class NodoCondicional(NodoAST):
         l_else = f"if_else_{n}"
         l_end = f"if_end_{n}"
 
-        codigo = []
-        codigo.append(self.condicion.generarCodigo())
-        codigo.append("    cmp     eax, 0")
-        codigo.append(f"    je      {l_else}")
-        for c in self.cuerpo_if:
-            codigo.append(c.generarCodigo())
+        codigo = [
+            "    ; --- Inicio de Estructura Condicional (If) ---",
+            self.condicion.generarCodigo(),
+            "    cmp     eax, 0",
+            f"    je      {l_else}"
+        ]
+
+        if self.cuerpo_if:
+            codigo.append("    ; --- Rama Verdadero (If Body) ---")
+            for c in self.cuerpo_if:
+                codigo.append(_indent(c.generarCodigo(), 1))
+
         codigo.append(f"    jmp     {l_end}")
         codigo.append(f"{l_else}:")
-        for c in self.cuerpo_else:
-            codigo.append(c.generarCodigo())
+
+        if self.cuerpo_else:
+            codigo.append("    ; --- Rama Falso (Else Body) ---")
+            for c in self.cuerpo_else:
+                codigo.append(_indent(c.generarCodigo(), 1))
+
         codigo.append(f"{l_end}:")
+        codigo.append("    ; --- Fin de Estructura Condicional (If) ---")
         return "\n".join(codigo)
 
 
@@ -427,8 +491,13 @@ class NodoImprimir(NodoAST):
 
     def generarCodigoC(self) -> str:
         nombre = _tok_value(self.tipo)
-        args = ", ".join(a.generarCodigoC() for a in self.argumentos)
-        return f"{nombre}({args});"
+        if not self.argumentos:
+            return f"{nombre}();"
+        arg = self.argumentos[0]
+        if isinstance(arg, NodoString):
+            return f"{nombre}({arg.generarCodigoC()});"
+        else:
+            return f'printf("%d", {arg.generarCodigoC()});'
 
     def generarCodigo(self) -> str:
         if not self.argumentos:
@@ -523,14 +592,22 @@ class NodoWhile(NodoAST):
         l_start = f"while_start_{n}"
         l_end = f"while_end_{n}"
 
-        codigo = [f"{l_start}:"]
-        codigo.append(self.condicion.generarCodigo())
-        codigo.append("    cmp     eax, 0")
-        codigo.append(f"    je      {l_end}")
-        for c in self.cuerpo:
-            codigo.append(c.generarCodigo())
+        codigo = [
+            "    ; --- Inicio de Bucle (While) ---",
+            f"{l_start}:",
+            self.condicion.generarCodigo(),
+            "    cmp     eax, 0",
+            f"    je      {l_end}"
+        ]
+
+        if self.cuerpo:
+            codigo.append("    ; --- Cuerpo del Bucle (While Body) ---")
+            for c in self.cuerpo:
+                codigo.append(_indent(c.generarCodigo(), 1))
+
         codigo.append(f"    jmp     {l_start}")
         codigo.append(f"{l_end}:")
+        codigo.append("    ; --- Fin de Bucle (While) ---")
         return "\n".join(codigo)
 
 
@@ -553,10 +630,14 @@ class NodoFor(NodoAST):
             self.condicion,
             list(self.cuerpo) + ([self.incremento] if self.incremento is not None else []),
         )
-        partes = []
+        partes = [
+            "    ; --- Inicio de Bucle (For) ---"
+        ]
         if self.inicio is not None:
+            partes.append("    ; --- Inicialización del For ---")
             partes.append(self.inicio.generarCodigo())
         partes.append(equiv.generarCodigo())
+        partes.append("    ; --- Fin de Bucle (For) ---")
         return "\n".join(partes)
 
 
@@ -574,7 +655,7 @@ class NodoIncremento(NodoAST):
         nombre = _tok_value(self.nombre)
         op = _tok_value(self.operador)
         instr = "inc" if op == "++" else "dec"
-        return f"    {instr}     dword [{nombre}]"
+        return f"    ; --- incremento/decremento: {nombre}{op} ---\n    {instr}     dword [{nombre}]"
 
 
 class NodoEntrada(NodoAST):
@@ -674,11 +755,12 @@ class NodoLlamadaFuncion(NodoAST):
         return f"{self._nombre()}({args});"
 
     def generarCodigo(self) -> str:
-        codigo = []
+        nombre = self._nombre()
+        codigo = [f"    ; --- llamada a función: {nombre} ---"]
         for arg in reversed(self.argumentos):
             codigo.append(arg.generarCodigo())
-            codigo.append("    push    eax   ; pasar argumento a la pila")
-        codigo.append(f"    call    {self._nombre()}")
+            codigo.append("    push    eax             ; pasar argumento a la pila")
+        codigo.append(f"    call    {nombre}")
         if self.argumentos:
-            codigo.append(f"    add     esp, {len(self.argumentos) * 4}")
+            codigo.append(f"    add     esp, {len(self.argumentos) * 4}     ; restaurar la pila")
         return "\n".join(codigo)

@@ -355,7 +355,7 @@ export function ProjectManager({
 
       {/* Export Dialog */}
       <Dialog open={isExportOpen} onOpenChange={setIsExportOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Exportar proyecto</DialogTitle>
           </DialogHeader>

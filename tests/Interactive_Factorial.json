@@ -1,0 +1,327 @@
+{
+  "id": "test-factorial-interactive",
+  "name": "Factorial Interactivo",
+  "createdAt": "2026-05-28T08:00:00Z",
+  "updatedAt": "2026-05-28T08:00:00Z",
+  "flowchartState": {
+    "nodes": [
+      {
+        "id": "start-node",
+        "type": "start-end",
+        "position": { "x": 350, "y": 50 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Inicio main()",
+        "connections": [],
+        "data": {
+          "functionName": "main",
+          "parameters": [],
+          "isStart": true
+        }
+      },
+      {
+        "id": "decl-n",
+        "type": "input-output",
+        "position": { "x": 340, "y": 140 },
+        "size": { "width": 160, "height": 60 },
+        "content": "int n = 0",
+        "connections": [],
+        "data": {
+          "mode": "declare",
+          "variable": {
+            "name": "n",
+            "type": "int",
+            "value": "0"
+          }
+        }
+      },
+      {
+        "id": "decl-fact-global",
+        "type": "input-output",
+        "position": { "x": 340, "y": 230 },
+        "size": { "width": 160, "height": 60 },
+        "content": "int fact = 1",
+        "connections": [],
+        "data": {
+          "mode": "declare",
+          "variable": {
+            "name": "fact",
+            "type": "int",
+            "value": "1"
+          }
+        }
+      },
+      {
+        "id": "decl-temp-global",
+        "type": "input-output",
+        "position": { "x": 340, "y": 320 },
+        "size": { "width": 160, "height": 60 },
+        "content": "int temp = 0",
+        "connections": [],
+        "data": {
+          "mode": "declare",
+          "variable": {
+            "name": "temp",
+            "type": "int",
+            "value": "0"
+          }
+        }
+      },
+      {
+        "id": "print-prompt",
+        "type": "process",
+        "position": { "x": 330, "y": 410 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: Introduce un numero (entero positivo): ",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "Introduce un numero (entero positivo): "
+        }
+      },
+      {
+        "id": "scanf-n",
+        "type": "input-output",
+        "position": { "x": 340, "y": 500 },
+        "size": { "width": 160, "height": 60 },
+        "content": "scanf(n)",
+        "connections": [],
+        "data": {
+          "mode": "scanf",
+          "variable": {
+            "name": "n",
+            "type": "int"
+          }
+        }
+      },
+      {
+        "id": "if-invalid",
+        "type": "decision",
+        "position": { "x": 345, "y": 600 },
+        "size": { "width": 150, "height": 80 },
+        "content": "if (n < 0)",
+        "connections": [],
+        "data": {
+          "conditionalType": "if",
+          "condition": "n < 0",
+          "cases": []
+        }
+      },
+      {
+        "id": "print-error",
+        "type": "process",
+        "position": { "x": 180, "y": 720 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: Error: numero negativo",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "Error: numero negativo"
+        }
+      },
+      {
+        "id": "return-error",
+        "type": "return",
+        "position": { "x": 200, "y": 820 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Retornar 1",
+        "connections": [],
+        "data": {
+          "returnValue": "1"
+        }
+      },
+      {
+        "id": "assign-fact-init",
+        "type": "process",
+        "position": { "x": 500, "y": 720 },
+        "size": { "width": 160, "height": 60 },
+        "content": "fact = 1",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "fact",
+          "value": "1"
+        }
+      },
+      {
+        "id": "assign-temp-init",
+        "type": "process",
+        "position": { "x": 500, "y": 810 },
+        "size": { "width": 160, "height": 60 },
+        "content": "temp = n",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "temp",
+          "value": "n"
+        }
+      },
+      {
+        "id": "while-node",
+        "type": "decision",
+        "position": { "x": 505, "y": 910 },
+        "size": { "width": 150, "height": 80 },
+        "content": "while (temp > 1)",
+        "connections": [],
+        "data": {
+          "conditionalType": "while",
+          "condition": "temp > 1",
+          "cases": []
+        }
+      },
+      {
+        "id": "assign-fact",
+        "type": "process",
+        "position": { "x": 500, "y": 1030 },
+        "size": { "width": 160, "height": 60 },
+        "content": "fact = fact * temp",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "fact",
+          "value": "fact * temp"
+        }
+      },
+      {
+        "id": "assign-temp",
+        "type": "process",
+        "position": { "x": 500, "y": 1120 },
+        "size": { "width": 160, "height": 60 },
+        "content": "temp = temp - 1",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "temp",
+          "value": "temp - 1"
+        }
+      },
+      {
+        "id": "print-result",
+        "type": "process",
+        "position": { "x": 730, "y": 920 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: Factorial = {fact}",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "Factorial = {fact}"
+        }
+      },
+      {
+        "id": "return-ok",
+        "type": "return",
+        "position": { "x": 950, "y": 920 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Retornar 0",
+        "connections": [],
+        "data": {
+          "returnValue": "0"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c-fact-1",
+        "sourceId": "start-node",
+        "targetId": "decl-n",
+        "type": "default"
+      },
+      {
+        "id": "c-fact-1b",
+        "sourceId": "decl-n",
+        "targetId": "decl-fact-global",
+        "type": "default"
+      },
+      {
+        "id": "c-fact-1c",
+        "sourceId": "decl-fact-global",
+        "targetId": "decl-temp-global",
+        "type": "default"
+      },
+      {
+        "id": "c-fact-2",
+        "sourceId": "decl-temp-global",
+        "targetId": "print-prompt",
+        "type": "default"
+      },
+      {
+        "id": "c-fact-3",
+        "sourceId": "print-prompt",
+        "targetId": "scanf-n",
+        "type": "default"
+      },
+      {
+        "id": "c-fact-4",
+        "sourceId": "scanf-n",
+        "targetId": "if-invalid",
+        "type": "default"
+      },
+      {
+        "id": "c-fact-5",
+        "sourceId": "if-invalid",
+        "targetId": "print-error",
+        "type": "yes",
+        "label": "Sí"
+      },
+      {
+        "id": "c-fact-6",
+        "sourceId": "print-error",
+        "targetId": "return-error",
+        "type": "default"
+      },
+      {
+        "id": "c-fact-7",
+        "sourceId": "if-invalid",
+        "targetId": "assign-fact-init",
+        "type": "no",
+        "label": "No"
+      },
+      {
+        "id": "c-fact-8",
+        "sourceId": "assign-fact-init",
+        "targetId": "assign-temp-init",
+        "type": "default"
+      },
+      {
+        "id": "c-fact-9",
+        "sourceId": "assign-temp-init",
+        "targetId": "while-node",
+        "type": "default"
+      },
+      {
+        "id": "c-fact-10",
+        "sourceId": "while-node",
+        "targetId": "assign-fact",
+        "type": "yes",
+        "label": "Sí"
+      },
+      {
+        "id": "c-fact-11",
+        "sourceId": "assign-fact",
+        "targetId": "assign-temp",
+        "type": "default"
+      },
+      {
+        "id": "c-fact-12",
+        "sourceId": "assign-temp",
+        "targetId": "while-node",
+        "type": "default"
+      },
+      {
+        "id": "c-fact-13",
+        "sourceId": "while-node",
+        "targetId": "print-result",
+        "type": "no",
+        "label": "No"
+      },
+      {
+        "id": "c-fact-14",
+        "sourceId": "print-result",
+        "targetId": "return-ok",
+        "type": "default"
+      }
+    ],
+    "selectedNodeId": null,
+    "zoom": 1,
+    "pan": { "x": 0, "y": 0 }
+  }
+}

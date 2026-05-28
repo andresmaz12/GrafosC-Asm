@@ -125,6 +125,7 @@ export const PROCESS_TYPES = [
 export const CONDITIONAL_TYPES = [
   { value: 'if', label: 'Condicional (if)' },
   { value: 'while', label: 'Bucle (while)' },
+  { value: 'for', label: 'Bucle (for)' },
 ] as const
 
 /**

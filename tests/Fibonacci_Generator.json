@@ -1,0 +1,273 @@
+{
+  "id": "test-fibonacci",
+  "name": "Generador de Fibonacci",
+  "createdAt": "2026-05-28T08:00:00Z",
+  "updatedAt": "2026-05-28T08:00:00Z",
+  "flowchartState": {
+    "nodes": [
+      {
+        "id": "start-node",
+        "type": "start-end",
+        "position": { "x": 350, "y": 50 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Inicio main()",
+        "connections": [],
+        "data": {
+          "functionName": "main",
+          "parameters": [],
+          "isStart": true
+        }
+      },
+      {
+        "id": "decl-a",
+        "type": "input-output",
+        "position": { "x": 340, "y": 140 },
+        "size": { "width": 160, "height": 60 },
+        "content": "int a = 0",
+        "connections": [],
+        "data": {
+          "mode": "declare",
+          "variable": {
+            "name": "a",
+            "type": "int",
+            "value": "0"
+          }
+        }
+      },
+      {
+        "id": "decl-b",
+        "type": "input-output",
+        "position": { "x": 340, "y": 230 },
+        "size": { "width": 160, "height": 60 },
+        "content": "int b = 1",
+        "connections": [],
+        "data": {
+          "mode": "declare",
+          "variable": {
+            "name": "b",
+            "type": "int",
+            "value": "1"
+          }
+        }
+      },
+      {
+        "id": "decl-temp",
+        "type": "input-output",
+        "position": { "x": 340, "y": 320 },
+        "size": { "width": 160, "height": 60 },
+        "content": "int temp = 0",
+        "connections": [],
+        "data": {
+          "mode": "declare",
+          "variable": {
+            "name": "temp",
+            "type": "int",
+            "value": "0"
+          }
+        }
+      },
+      {
+        "id": "decl-i",
+        "type": "input-output",
+        "position": { "x": 340, "y": 410 },
+        "size": { "width": 160, "height": 60 },
+        "content": "int i = 0",
+        "connections": [],
+        "data": {
+          "mode": "declare",
+          "variable": {
+            "name": "i",
+            "type": "int",
+            "value": "0"
+          }
+        }
+      },
+      {
+        "id": "print-a",
+        "type": "process",
+        "position": { "x": 330, "y": 500 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: Fibonacci 1: {a}",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "Fibonacci 1: {a}"
+        }
+      },
+      {
+        "id": "print-b",
+        "type": "process",
+        "position": { "x": 330, "y": 590 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: Fibonacci 2: {b}",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "Fibonacci 2: {b}"
+        }
+      },
+      {
+        "id": "for-node",
+        "type": "decision",
+        "position": { "x": 345, "y": 690 },
+        "size": { "width": 150, "height": 80 },
+        "content": "for (i = 3; i <= 10; i++)",
+        "connections": [],
+        "data": {
+          "conditionalType": "for",
+          "init": "i = 3",
+          "condition": "i <= 10",
+          "increment": "i++",
+          "cases": []
+        }
+      },
+      {
+        "id": "assign-temp",
+        "type": "process",
+        "position": { "x": 340, "y": 810 },
+        "size": { "width": 160, "height": 60 },
+        "content": "temp = a + b",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "temp",
+          "value": "a + b"
+        }
+      },
+      {
+        "id": "assign-a",
+        "type": "process",
+        "position": { "x": 340, "y": 900 },
+        "size": { "width": 160, "height": 60 },
+        "content": "a = b",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "a",
+          "value": "b"
+        }
+      },
+      {
+        "id": "assign-b",
+        "type": "process",
+        "position": { "x": 340, "y": 990 },
+        "size": { "width": 160, "height": 60 },
+        "content": "b = temp",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "b",
+          "value": "temp"
+        }
+      },
+      {
+        "id": "print-b-val",
+        "type": "process",
+        "position": { "x": 330, "y": 1080 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: Fibonacci {i}: {b}",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "Fibonacci {i}: {b}"
+        }
+      },
+      {
+        "id": "return-node",
+        "type": "return",
+        "position": { "x": 580, "y": 700 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Retornar 0",
+        "connections": [],
+        "data": {
+          "returnValue": "0"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c-fib-1",
+        "sourceId": "start-node",
+        "targetId": "decl-a",
+        "type": "default"
+      },
+      {
+        "id": "c-fib-2",
+        "sourceId": "decl-a",
+        "targetId": "decl-b",
+        "type": "default"
+      },
+      {
+        "id": "c-fib-3",
+        "sourceId": "decl-b",
+        "targetId": "decl-temp",
+        "type": "default"
+      },
+      {
+        "id": "c-fib-3b",
+        "sourceId": "decl-temp",
+        "targetId": "decl-i",
+        "type": "default"
+      },
+      {
+        "id": "c-fib-4",
+        "sourceId": "decl-i",
+        "targetId": "print-a",
+        "type": "default"
+      },
+      {
+        "id": "c-fib-5",
+        "sourceId": "print-a",
+        "targetId": "print-b",
+        "type": "default"
+      },
+      {
+        "id": "c-fib-6",
+        "sourceId": "print-b",
+        "targetId": "for-node",
+        "type": "default"
+      },
+      {
+        "id": "c-fib-7",
+        "sourceId": "for-node",
+        "targetId": "assign-temp",
+        "type": "yes",
+        "label": "Sí"
+      },
+      {
+        "id": "c-fib-8",
+        "sourceId": "assign-temp",
+        "targetId": "assign-a",
+        "type": "default"
+      },
+      {
+        "id": "c-fib-9",
+        "sourceId": "assign-a",
+        "targetId": "assign-b",
+        "type": "default"
+      },
+      {
+        "id": "c-fib-10",
+        "sourceId": "assign-b",
+        "targetId": "print-b-val",
+        "type": "default"
+      },
+      {
+        "id": "c-fib-11",
+        "sourceId": "print-b-val",
+        "targetId": "for-node",
+        "type": "default"
+      },
+      {
+        "id": "c-fib-12",
+        "sourceId": "for-node",
+        "targetId": "return-node",
+        "type": "no",
+        "label": "No"
+      }
+    ],
+    "selectedNodeId": null,
+    "zoom": 1,
+    "pan": { "x": 0, "y": 0 }
+  }
+}

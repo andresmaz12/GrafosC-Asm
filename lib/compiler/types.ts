@@ -22,7 +22,7 @@ export type ProcessType = 'print' | 'assign' | 'increment'
 /**
  * Tipos de condicional
  */
-export type ConditionalType = 'if' | 'while'
+export type ConditionalType = 'if' | 'while' | 'for'
 
 /**
  * Tipo de variable
@@ -67,9 +67,12 @@ export interface DecisionData {
   conditionalType: ConditionalType
   condition: string
   cases: { label: string; condition: string }[] // Max 3 para if
+  init?: string
+  increment?: string
 }
 
 export interface InputOutputData {
+  mode?: 'declare' | 'scanf'
   variable: VariableDefinition
 }
 

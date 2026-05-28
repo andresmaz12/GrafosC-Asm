@@ -6,12 +6,13 @@
 // Barra superior con titulo y boton de compilacion
 
 import { cn } from '@/lib/utils'
-import { Play, Settings, Save, FolderOpen, Info, Upload } from 'lucide-react'
+import { Play, Settings, Save, FolderOpen, Info, Upload, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Spinner } from '@/components/ui/spinner'
 import { useRef } from 'react'
 import { parseMermaidToState, type FlowchartState } from '@/lib/compiler'
+import { useRouter } from 'next/navigation'
 
 interface CompilerHeaderProps {
   onCompile: () => void
@@ -22,6 +23,8 @@ interface CompilerHeaderProps {
   isCompiling: boolean
   projectName: string
   className?: string
+  onExecute?: () => void
+  canExecute?: boolean
 }
 
 export function CompilerHeader({
@@ -32,9 +35,12 @@ export function CompilerHeader({
   onUploadMermaid,
   isCompiling,
   projectName,
-  className
+  className,
+  onExecute,
+  canExecute = false
 }: CompilerHeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
 
   const handleUploadClick = () => {
     fileInputRef.current?.click()
@@ -71,6 +77,14 @@ export function CompilerHeader({
       >
         {/* Left section - Logo and title */}
         <div className="flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => router.push('/')}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+          >
+            <Home className="h-4 w-4" />
+          </Button>
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm">
             C
           </div>
@@ -143,8 +157,8 @@ export function CompilerHeader({
           </Tooltip>
         </div>
 
-        {/* Right section - Compile button */}
-        <div className="flex items-center gap-3">
+        {/* Right section - Actions */}
+        <div className="flex items-center gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="text-muted-foreground">
@@ -166,7 +180,7 @@ export function CompilerHeader({
           <Button 
             onClick={onCompile}
             disabled={isCompiling}
-            className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
           >
             {isCompiling ? (
               <>
@@ -180,6 +194,22 @@ export function CompilerHeader({
               </>
             )}
           </Button>
+
+          {onExecute && (
+            <Button 
+              onClick={onExecute}
+              disabled={!canExecute}
+              className={cn(
+                "gap-2 font-medium cursor-pointer transition-colors shadow-sm h-9",
+                canExecute 
+                  ? "bg-emerald-600 hover:bg-emerald-500 text-white" 
+                  : "bg-emerald-600/30 hover:bg-emerald-600/30 text-white/40 cursor-not-allowed border border-zinc-800/10"
+              )}
+            >
+              <Play className="h-4 w-4 fill-current" />
+              Ejecutar
+            </Button>
+          )}
         </div>
       </header>
     </TooltipProvider>

@@ -11,7 +11,7 @@ import path from 'node:path'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const PYTHON_TIMEOUT_MS = 15_000
+const PYTHON_TIMEOUT_MS = 60_000   // 60 s — incluye tiempo de ensamblado WSL
 const PYTHON_CANDIDATES = process.platform === 'win32'
   ? ['python', 'py', 'python3']
   : ['python3', 'python']
@@ -27,6 +27,20 @@ interface CompileResponse {
   cCode?: string
   asmCode?: string
   mermaidCode?: string
+  // Datos del ensamblado (NASM + ld via WSL2)
+  elfPath?: string
+  nasmLog?: string
+  ldLog?: string
+  asmElapsedMs?: number
+  prereq?: {
+    wsl: boolean
+    nasm: boolean
+    ld: boolean
+    wsl_distro?: string
+    nasm_ver?: string
+    ld_ver?: string
+    install_hint?: string
+  }
   errors?: string[]
   warnings?: string[]
   files?: Record<string, string>

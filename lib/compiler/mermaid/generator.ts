@@ -11,10 +11,10 @@ export function generateMermaidCode(state: FlowchartState): string {
   const { nodes, connections } = state
   
   if (nodes.length === 0) {
-    return '```mermaid\nflowchart TD\n    A[Diagrama vacio]\n```'
+    return 'flowchart TD\n    A["Diagrama vacio"]'
   }
 
-  let mermaid = '```mermaid\nflowchart TD\n'
+  let mermaid = 'flowchart TD\n'
   
   // Generar definiciones de nodos
   nodes.forEach(node => {
@@ -23,25 +23,25 @@ export function generateMermaidCode(state: FlowchartState): string {
     
     switch (node.type) {
       case 'start-end':
-        mermaid += `    ${nodeId}([${content}])\n`
+        mermaid += `    ${nodeId}(["${content}"])\n`
         break
       case 'process':
-        mermaid += `    ${nodeId}[${content}]\n`
+        mermaid += `    ${nodeId}["${content}"]\n`
         break
       case 'decision':
-        mermaid += `    ${nodeId}{${content}}\n`
+        mermaid += `    ${nodeId}{"${content}"}\n`
         break
       case 'input-output':
-        mermaid += `    ${nodeId}[/${content}/]\n`
+        mermaid += `    ${nodeId}[/"${content}"/]\n`
         break
       case 'subprocess':
-        mermaid += `    ${nodeId}[[${content}]]\n`
+        mermaid += `    ${nodeId}[["${content}"]]\n`
         break
       case 'return':
-        mermaid += `    ${nodeId}{{${content}}}\n`
+        mermaid += `    ${nodeId}{{"${content}"}}\n`
         break
       default:
-        mermaid += `    ${nodeId}[${content}]\n`
+        mermaid += `    ${nodeId}["${content}"]\n`
     }
   })
 
@@ -53,7 +53,7 @@ export function generateMermaidCode(state: FlowchartState): string {
     const targetId = `node_${conn.targetId}`
     
     if (conn.label) {
-      mermaid += `    ${sourceId} -->|${conn.label}| ${targetId}\n`
+      mermaid += `    ${sourceId} -->|"${conn.label}"| ${targetId}\n`
     } else {
       mermaid += `    ${sourceId} --> ${targetId}\n`
     }
@@ -66,8 +66,6 @@ export function generateMermaidCode(state: FlowchartState): string {
     const style = getNodeStyle(node.type)
     mermaid += `    style ${nodeId} ${style}\n`
   })
-
-  mermaid += '```'
   
   return mermaid
 }
@@ -77,7 +75,7 @@ export function generateMermaidCode(state: FlowchartState): string {
  */
 function escapeContent(content: string): string {
   return content
-    .replace(/"/g, '&quot;')
+    .replace(/"/g, '#34;') // Reemplazar comillas con entidad HTML para evitar conflictos con comillas externas
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/\n/g, '<br>')

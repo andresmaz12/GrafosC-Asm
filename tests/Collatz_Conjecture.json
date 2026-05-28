@@ -1,0 +1,314 @@
+{
+  "id": "test-collatz",
+  "name": "Conjetura de Collatz",
+  "createdAt": "2026-05-28T08:00:00Z",
+  "updatedAt": "2026-05-28T08:00:00Z",
+  "flowchartState": {
+    "nodes": [
+      {
+        "id": "start-node",
+        "type": "start-end",
+        "position": { "x": 350, "y": 50 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Inicio main()",
+        "connections": [],
+        "data": {
+          "functionName": "main",
+          "parameters": [],
+          "isStart": true
+        }
+      },
+      {
+        "id": "decl-n",
+        "type": "input-output",
+        "position": { "x": 340, "y": 140 },
+        "size": { "width": 160, "height": 60 },
+        "content": "int n = 7",
+        "connections": [],
+        "data": {
+          "mode": "declare",
+          "variable": {
+            "name": "n",
+            "type": "int",
+            "value": "7"
+          }
+        }
+      },
+      {
+        "id": "decl-temp-global",
+        "type": "input-output",
+        "position": { "x": 340, "y": 230 },
+        "size": { "width": 160, "height": 60 },
+        "content": "int temp = 0",
+        "connections": [],
+        "data": {
+          "mode": "declare",
+          "variable": {
+            "name": "temp",
+            "type": "int",
+            "value": "0"
+          }
+        }
+      },
+      {
+        "id": "decl-check-global",
+        "type": "input-output",
+        "position": { "x": 340, "y": 320 },
+        "size": { "width": 160, "height": 60 },
+        "content": "int check = 0",
+        "connections": [],
+        "data": {
+          "mode": "declare",
+          "variable": {
+            "name": "check",
+            "type": "int",
+            "value": "0"
+          }
+        }
+      },
+      {
+        "id": "print-init",
+        "type": "process",
+        "position": { "x": 330, "y": 410 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: Inicio n = {n}",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "Inicio n = {n}"
+        }
+      },
+      {
+        "id": "while-node",
+        "type": "decision",
+        "position": { "x": 345, "y": 510 },
+        "size": { "width": 150, "height": 80 },
+        "content": "while (n > 1)",
+        "connections": [],
+        "data": {
+          "conditionalType": "while",
+          "condition": "n > 1",
+          "cases": []
+        }
+      },
+      {
+        "id": "assign-temp",
+        "type": "process",
+        "position": { "x": 340, "y": 630 },
+        "size": { "width": 160, "height": 60 },
+        "content": "temp = n / 2",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "temp",
+          "value": "n / 2"
+        }
+      },
+      {
+        "id": "assign-check",
+        "type": "process",
+        "position": { "x": 340, "y": 720 },
+        "size": { "width": 160, "height": 60 },
+        "content": "check = temp * 2",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "check",
+          "value": "temp * 2"
+        }
+      },
+      {
+        "id": "if-node",
+        "type": "decision",
+        "position": { "x": 345, "y": 810 },
+        "size": { "width": 150, "height": 80 },
+        "content": "if (check == n)",
+        "connections": [],
+        "data": {
+          "conditionalType": "if",
+          "condition": "check == n",
+          "cases": []
+        }
+      },
+      {
+        "id": "assign-even",
+        "type": "process",
+        "position": { "x": 200, "y": 930 },
+        "size": { "width": 160, "height": 60 },
+        "content": "n = n / 2",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "n",
+          "value": "n / 2"
+        }
+      },
+      {
+        "id": "assign-odd-mul",
+        "type": "process",
+        "position": { "x": 480, "y": 930 },
+        "size": { "width": 160, "height": 60 },
+        "content": "n = n * 3",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "n",
+          "value": "n * 3"
+        }
+      },
+      {
+        "id": "assign-odd-add",
+        "type": "process",
+        "position": { "x": 480, "y": 1020 },
+        "size": { "width": 160, "height": 60 },
+        "content": "n = n + 1",
+        "connections": [],
+        "data": {
+          "processType": "assign",
+          "variableName": "n",
+          "value": "n + 1"
+        }
+      },
+      {
+        "id": "print-step",
+        "type": "process",
+        "position": { "x": 330, "y": 1130 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: Paso n = {n}",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "Paso n = {n}"
+        }
+      },
+      {
+        "id": "print-end",
+        "type": "process",
+        "position": { "x": 580, "y": 520 },
+        "size": { "width": 180, "height": 60 },
+        "content": "Imprimir: Terminado!",
+        "connections": [],
+        "data": {
+          "processType": "print",
+          "printContent": "Terminado!"
+        }
+      },
+      {
+        "id": "return-node",
+        "type": "return",
+        "position": { "x": 790, "y": 520 },
+        "size": { "width": 140, "height": 60 },
+        "content": "Retornar 0",
+        "connections": [],
+        "data": {
+          "returnValue": "0"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c-collatz-1",
+        "sourceId": "start-node",
+        "targetId": "decl-n",
+        "type": "default"
+      },
+      {
+        "id": "c-collatz-1b",
+        "sourceId": "decl-n",
+        "targetId": "decl-temp-global",
+        "type": "default"
+      },
+      {
+        "id": "c-collatz-1c",
+        "sourceId": "decl-temp-global",
+        "targetId": "decl-check-global",
+        "type": "default"
+      },
+      {
+        "id": "c-collatz-2",
+        "sourceId": "decl-check-global",
+        "targetId": "print-init",
+        "type": "default"
+      },
+      {
+        "id": "c-collatz-3",
+        "sourceId": "print-init",
+        "targetId": "while-node",
+        "type": "default"
+      },
+      {
+        "id": "c-collatz-4",
+        "sourceId": "while-node",
+        "targetId": "assign-temp",
+        "type": "yes",
+        "label": "Sí"
+      },
+      {
+        "id": "c-collatz-5",
+        "sourceId": "assign-temp",
+        "targetId": "assign-check",
+        "type": "default"
+      },
+      {
+        "id": "c-collatz-6",
+        "sourceId": "assign-check",
+        "targetId": "if-node",
+        "type": "default"
+      },
+      {
+        "id": "c-collatz-7",
+        "sourceId": "if-node",
+        "targetId": "assign-even",
+        "type": "yes",
+        "label": "Sí"
+      },
+      {
+        "id": "c-collatz-8",
+        "sourceId": "if-node",
+        "targetId": "assign-odd-mul",
+        "type": "no",
+        "label": "No"
+      },
+      {
+        "id": "c-collatz-8b",
+        "sourceId": "assign-odd-mul",
+        "targetId": "assign-odd-add",
+        "type": "default"
+      },
+      {
+        "id": "c-collatz-9",
+        "sourceId": "assign-even",
+        "targetId": "print-step",
+        "type": "default"
+      },
+      {
+        "id": "c-collatz-10",
+        "sourceId": "assign-odd-add",
+        "targetId": "print-step",
+        "type": "default"
+      },
+      {
+        "id": "c-collatz-11",
+        "sourceId": "print-step",
+        "targetId": "while-node",
+        "type": "default"
+      },
+      {
+        "id": "c-collatz-12",
+        "sourceId": "while-node",
+        "targetId": "print-end",
+        "type": "no",
+        "label": "No"
+      },
+      {
+        "id": "c-collatz-13",
+        "sourceId": "print-end",
+        "targetId": "return-node",
+        "type": "default"
+      }
+    ],
+    "selectedNodeId": null,
+    "zoom": 1,
+    "pan": { "x": 0, "y": 0 }
+  }
+}

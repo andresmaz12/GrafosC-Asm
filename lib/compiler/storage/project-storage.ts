@@ -4,6 +4,8 @@
 
 import type { Project, FlowchartState } from '../types'
 import { STORAGE_KEYS } from '../constants'
+import { TEMPLATES } from './templates'
+import type { TemplateType } from './templates'
 
 const generateId = () => Math.random().toString(36).substring(2, 9) + Date.now().toString(36)
 
@@ -15,7 +17,38 @@ export function getAllProjects(): Project[] {
   
   try {
     const data = localStorage.getItem(STORAGE_KEYS.projects)
-    return data ? JSON.parse(data) : []
+    let projects: Project[] = data ? JSON.parse(data) : []
+    
+    // Seed de nuevos proyectos de prueba en el historial
+    if (!localStorage.getItem('seeded_default_test_projects_v2')) {
+      const now = new Date().toISOString()
+      const seedTemplates: TemplateType[] = ['collatz', 'fibonacci', 'factorial_interactive', 'auxiliary']
+      const seedNames: Record<TemplateType, string> = {
+        collatz: 'Conjetura de Collatz',
+        fibonacci: 'Generador de Fibonacci',
+        factorial_interactive: 'Factorial Interactivo con Entrada',
+        auxiliary: 'Funciones Auxiliares',
+        empty: '', hello: '', loop: '', factorial: ''
+      }
+      
+      const seedProjects: Project[] = seedTemplates.map((type) => {
+        const template = TEMPLATES[type]
+        return {
+          id: `seed-${type}-${Math.random().toString(36).substring(2, 7)}`,
+          name: seedNames[type],
+          createdAt: now,
+          updatedAt: now,
+          flowchartState: JSON.parse(JSON.stringify(template.state)) as FlowchartState
+        }
+      })
+      
+      // Combinar los nuevos proyectos semilla al inicio del historial
+      projects = [...seedProjects, ...projects]
+      localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(projects))
+      localStorage.setItem('seeded_default_test_projects_v2', 'true')
+    }
+    
+    return projects
   } catch {
     return []
   }
@@ -30,22 +63,23 @@ export function getProjectById(id: string): Project | null {
 }
 
 /**
- * Crea un nuevo proyecto
+ * Crea un nuevo proyecto (opcionalmente basado en una plantilla)
  */
-export function createProject(name: string): Project {
+export function createProject(name: string, templateType: TemplateType = 'empty'): Project {
   const now = new Date().toISOString()
+  
+  // Buscar plantilla correspondiente, por defecto vacía
+  const template = TEMPLATES[templateType] || TEMPLATES['empty']
+  
+  // Clonar el estado de la plantilla de forma segura para evitar mutar la referencia original
+  const flowchartState = JSON.parse(JSON.stringify(template.state)) as FlowchartState
+
   const newProject: Project = {
     id: generateId(),
     name,
     createdAt: now,
     updatedAt: now,
-    flowchartState: {
-      nodes: [],
-      connections: [],
-      selectedNodeId: null,
-      zoom: 1,
-      pan: { x: 0, y: 0 }
-    }
+    flowchartState
   }
 
   const projects = getAllProjects()

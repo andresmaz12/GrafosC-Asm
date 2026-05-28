@@ -114,6 +114,13 @@ MERMAID/*.md
 !GrafosC-Asm/.gitkeep
 !MERMAID/.gitkeep
 
+outputs/GrafosC-Asm/*.c
+outputs/GrafosC-Asm/*.asm
+outputs/GrafosC-Asm/bin/
+outputs/MERMAID/*.md
+!outputs/GrafosC-Asm/.gitkeep
+!outputs/MERMAID/.gitkeep
+
 # --------------------------------------------
 # Cursor
 # --------------------------------------------

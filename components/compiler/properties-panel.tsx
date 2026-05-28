@@ -121,12 +121,14 @@ export function PropertiesPanel({
             <DecisionProperties 
               node={selectedNode} 
               onUpdate={(updates) => onNodeUpdate(selectedNode.id, updates)} 
+              existingVariables={existingVariables}
             />
           )}
           {selectedNode.type === 'input-output' && (
             <InputOutputProperties 
               node={selectedNode} 
               onUpdate={(updates) => onNodeUpdate(selectedNode.id, updates)} 
+              existingVariables={existingVariables}
             />
           )}
           {selectedNode.type === 'subprocess' && (
@@ -145,6 +147,40 @@ export function PropertiesPanel({
           )}
         </div>
       </ScrollArea>
+    </div>
+  )
+}
+
+// ============================================
+// Helper Component: Variable Suggestions
+// ============================================
+function VariableSuggestions({
+  variables,
+  onSelect,
+  label = "Variables disponibles:"
+}: {
+  variables: string[]
+  onSelect: (variable: string) => void
+  label?: string
+}) {
+  if (variables.length === 0) return null
+  return (
+    <div className="space-y-1 mt-1">
+      <span className="text-[11px] text-muted-foreground block">{label}</span>
+      <div className="flex flex-wrap gap-1">
+        {variables.map(v => (
+          <Button
+            key={v}
+            variant="outline"
+            size="sm"
+            className="h-5 px-1.5 text-[10px] font-mono hover:bg-muted"
+            type="button"
+            onClick={() => onSelect(v)}
+          >
+            {v}
+          </Button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -343,8 +379,18 @@ function ProcessProperties({
           <Input
             value={data.printContent || ''}
             onChange={(e) => updateData({ printContent: e.target.value })}
-            placeholder="Hola mundo"
-            className="h-8 text-sm"
+            placeholder="Hola mundo o mi_variable"
+            className="h-8 text-sm font-mono"
+          />
+          <p className="text-[10px] text-muted-foreground leading-normal">
+            Tip: Escribe texto libre y usa llaves para interpolar variables, ej: <code>{'El valor es {x}'}</code>.
+          </p>
+          <VariableSuggestions
+            variables={existingVariables}
+            onSelect={(name) => {
+              const current = data.printContent || ''
+              updateData({ printContent: `${current}{${name}}` })
+            }}
           />
         </div>
       )}
@@ -386,7 +432,15 @@ function ProcessProperties({
                 value={data.value || ''}
                 onChange={(e) => updateData({ value: e.target.value })}
                 placeholder="0"
-                className="h-8 text-sm"
+                className="h-8 text-sm font-mono"
+              />
+              <VariableSuggestions
+                variables={existingVariables}
+                onSelect={(name) => {
+                  const current = data.value || ''
+                  const newValue = current ? `${current} ${name}` : name
+                  updateData({ value: newValue })
+                }}
               />
             </div>
           )}
@@ -413,10 +467,12 @@ function ProcessProperties({
 // ============================================
 function DecisionProperties({ 
   node, 
-  onUpdate 
+  onUpdate,
+  existingVariables
 }: { 
   node: FlowchartNode
   onUpdate: (updates: Partial<FlowchartNode>) => void 
+  existingVariables: string[]
 }) {
   const data = (node.data as DecisionData) || { 
     conditionalType: 'if', 
@@ -426,9 +482,11 @@ function DecisionProperties({
 
   const updateData = (updates: Partial<DecisionData>) => {
     const newData = { ...data, ...updates }
-    const content = newData.conditionalType === 'while' 
-      ? `while (${newData.condition})`
-      : `if (${newData.condition})`
+    const content = newData.conditionalType === 'for'
+      ? `for (${newData.init || ''}; ${newData.condition || ''}; ${newData.increment || ''})`
+      : newData.conditionalType === 'while' 
+        ? `while (${newData.condition})`
+        : `if (${newData.condition})`
     onUpdate({ data: newData, content })
   }
 
@@ -473,16 +531,81 @@ function DecisionProperties({
 
       <Separator />
 
-      {/* Condicion principal */}
-      <div className="space-y-2">
-        <Label className="text-sm">Condicion</Label>
-        <Input
-          value={data.condition}
-          onChange={(e) => updateData({ condition: e.target.value })}
-          placeholder="x > 0"
-          className="h-8 text-sm font-mono"
-        />
-      </div>
+      {/* Inputs para el Bucle FOR */}
+      {data.conditionalType === 'for' && (
+        <>
+          <div className="space-y-2">
+            <Label className="text-sm">Inicialización</Label>
+            <Input
+              value={data.init || ''}
+              onChange={(e) => updateData({ init: e.target.value })}
+              placeholder="int i = 0"
+              className="h-8 text-sm font-mono"
+            />
+            <VariableSuggestions
+              variables={existingVariables}
+              onSelect={(name) => {
+                const current = data.init || ''
+                updateData({ init: current ? `${current} ${name}` : name })
+              }}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label className="text-sm">Condición</Label>
+            <Input
+              value={data.condition || ''}
+              onChange={(e) => updateData({ condition: e.target.value })}
+              placeholder="i < 10"
+              className="h-8 text-sm font-mono"
+            />
+            <VariableSuggestions
+              variables={existingVariables}
+              onSelect={(name) => {
+                const current = data.condition || ''
+                updateData({ condition: current ? `${current} ${name}` : name })
+              }}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm">Incremento</Label>
+            <Input
+              value={data.increment || ''}
+              onChange={(e) => updateData({ increment: e.target.value })}
+              placeholder="i++"
+              className="h-8 text-sm font-mono"
+            />
+            <VariableSuggestions
+              variables={existingVariables}
+              onSelect={(name) => {
+                const current = data.increment || ''
+                updateData({ increment: current ? `${current} ${name}` : name })
+              }}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Condición principal para IF y WHILE */}
+      {(data.conditionalType === 'if' || data.conditionalType === 'while') && (
+        <div className="space-y-2">
+          <Label className="text-sm">Condicion</Label>
+          <Input
+            value={data.condition}
+            onChange={(e) => updateData({ condition: e.target.value })}
+            placeholder="x > 0"
+            className="h-8 text-sm font-mono"
+          />
+          <VariableSuggestions
+            variables={existingVariables}
+            onSelect={(name) => {
+              const current = data.condition || ''
+              updateData({ condition: current ? `${current} ${name}` : name })
+            }}
+          />
+        </div>
+      )}
 
       {/* Casos (solo para if, maximo 3) */}
       {data.conditionalType === 'if' && (
@@ -544,68 +667,162 @@ function DecisionProperties({
 // ============================================
 function InputOutputProperties({ 
   node, 
-  onUpdate 
+  onUpdate,
+  existingVariables
 }: { 
   node: FlowchartNode
   onUpdate: (updates: Partial<FlowchartNode>) => void 
+  existingVariables: string[]
 }) {
   const data = (node.data as InputOutputData) || { 
+    mode: 'declare',
     variable: { name: '', type: 'int', value: '' } 
   }
 
-  const updateData = (updates: Partial<InputOutputData['variable']>) => {
-    const newVariable = { ...data.variable, ...updates }
-    const content = `${newVariable.type} ${newVariable.name} = ${newVariable.value}`
-    onUpdate({ data: { variable: newVariable }, content })
+  const mode = data.mode || 'declare'
+
+  const updateData = (variableUpdates: Partial<InputOutputData['variable']>, newMode?: 'declare' | 'scanf') => {
+    const activeMode = newMode !== undefined ? newMode : mode
+    const newVariable = { ...data.variable, ...variableUpdates }
+    
+    let content = ''
+    if (activeMode === 'scanf') {
+      content = `scanf("${newVariable.name}")`
+    } else {
+      content = `${newVariable.type} ${newVariable.name} = ${newVariable.value}`
+    }
+
+    onUpdate({ 
+      data: { 
+        mode: activeMode,
+        variable: newVariable 
+      }, 
+      content 
+    })
   }
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-muted-foreground">
-        Define una variable. Puedes cometer errores de sintaxis.
-      </p>
-
-      {/* Tipo */}
+      {/* Selector de modo */}
       <div className="space-y-2">
-        <Label className="text-sm">Tipo de dato</Label>
-        <Select 
-          value={data.variable.type}
-          onValueChange={(type: VariableType) => updateData({ type })}
-        >
-          <SelectTrigger className="h-8 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {VARIABLE_TYPES.map(t => (
-              <SelectItem key={t.value} value={t.value} className="text-sm">
-                {t.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label className="text-sm">Modo de operación</Label>
+        <div className="grid grid-cols-2 gap-1.5 p-1 bg-muted/50 rounded-lg">
+          <Button
+            type="button"
+            variant={mode === 'declare' ? 'secondary' : 'ghost'}
+            className={cn(
+              "h-7 text-[11px] font-medium px-2 py-1 rounded-md transition-all shadow-none",
+              mode === 'declare' && "bg-background text-foreground shadow-sm hover:bg-background"
+            )}
+            onClick={() => updateData({}, 'declare')}
+          >
+            Declarar variable
+          </Button>
+          <Button
+            type="button"
+            variant={mode === 'scanf' ? 'secondary' : 'ghost'}
+            className={cn(
+              "h-7 text-[11px] font-medium px-2 py-1 rounded-md transition-all shadow-none",
+              mode === 'scanf' && "bg-background text-foreground shadow-sm hover:bg-background"
+            )}
+            onClick={() => updateData({}, 'scanf')}
+          >
+            Leer por teclado
+          </Button>
+        </div>
       </div>
 
-      {/* Nombre */}
-      <div className="space-y-2">
-        <Label className="text-sm">Nombre de variable</Label>
-        <Input
-          value={data.variable.name}
-          onChange={(e) => updateData({ name: e.target.value })}
-          placeholder="mi_variable"
-          className="h-8 text-sm font-mono"
-        />
-      </div>
+      <Separator />
 
-      {/* Valor */}
-      <div className="space-y-2">
-        <Label className="text-sm">Valor inicial</Label>
-        <Input
-          value={data.variable.value}
-          onChange={(e) => updateData({ value: e.target.value })}
-          placeholder="0"
-          className="h-8 text-sm font-mono"
-        />
-      </div>
+      {/* Modo Declarar */}
+      {mode === 'declare' && (
+        <div className="space-y-4 pt-1">
+          {/* Tipo */}
+          <div className="space-y-2">
+            <Label className="text-sm">Tipo de dato</Label>
+            <Select 
+              value={data.variable.type}
+              onValueChange={(type: VariableType) => updateData({ type })}
+            >
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {VARIABLE_TYPES.map(t => (
+                  <SelectItem key={t.value} value={t.value} className="text-sm">
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Nombre */}
+          <div className="space-y-2">
+            <Label className="text-sm">Nombre de variable</Label>
+            <Input
+              value={data.variable.name}
+              onChange={(e) => updateData({ name: e.target.value })}
+              placeholder="mi_variable"
+              className="h-8 text-sm font-mono"
+            />
+          </div>
+
+          {/* Valor */}
+          <div className="space-y-2">
+            <Label className="text-sm">Valor inicial</Label>
+            <Input
+              value={data.variable.value}
+              onChange={(e) => updateData({ value: e.target.value })}
+              placeholder="0"
+              className="h-8 text-sm font-mono"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Modo Scanf */}
+      {mode === 'scanf' && (
+        <div className="space-y-4 pt-1">
+          <p className="text-xs text-muted-foreground leading-normal">
+            Lee datos desde el teclado por medio de <code>scanf()</code> y guárdalos en una variable declarada.
+          </p>
+
+          <div className="space-y-2">
+            <Label className="text-sm">Variable de destino</Label>
+            {existingVariables.length > 0 ? (
+              <Select 
+                value={data.variable.name || ''}
+                onValueChange={(name) => updateData({ name })}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="Seleccionar variable" />
+                </SelectTrigger>
+                <SelectContent>
+                  {existingVariables.map(v => (
+                    <SelectItem key={v} value={v} className="text-sm">
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                value={data.variable.name}
+                onChange={(e) => updateData({ name: e.target.value })}
+                placeholder="edad"
+                className="h-8 text-sm font-mono"
+              />
+            )}
+          </div>
+
+          <VariableSuggestions
+            variables={existingVariables}
+            onSelect={(name) => updateData({ name })}
+            label="Variables disponibles:"
+          />
+        </div>
+      )}
     </div>
   )
 }

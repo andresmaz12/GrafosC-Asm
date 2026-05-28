@@ -24,6 +24,7 @@ import type {
   FlowchartConnection,
   HandleSide,
   DecisionData,
+  ConditionalType,
 } from '@/lib/compiler/types'
 import { FlowchartNodeComponent } from './flowchart-node'
 import { FlowchartConnectionView } from './flowchart-connection'
@@ -319,7 +320,7 @@ export function FlowchartCanvas({
   const pendingSourceNode = pendingDecision
     ? nodes.find((n) => n.id === pendingDecision.sourceId)
     : null
-  const pendingDecisionType: 'if' | 'while' = (() => {
+  const pendingDecisionType: ConditionalType = (() => {
     const data = pendingSourceNode?.data as DecisionData | undefined
     return data?.conditionalType ?? 'if'
   })()
