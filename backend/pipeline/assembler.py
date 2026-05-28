@@ -97,10 +97,14 @@ def assemble_and_link(
     elf_wsl = _win_path_to_wsl(elf_path_win)
 
     # --- 3. Verificar que NASM está instalado en WSL ---
-    rc, _, _ = _run_wsl(["which", "nasm"])
+    try:
+        rc, _, _ = _run_wsl(["which", "nasm"])
+    except Exception:
+        rc = 1
     if rc != 0:
-        errors.append(
-            "NASM no está instalado en WSL. Instálalo con:\n"
+        warnings.append(
+            "NASM no está instalado en WSL. El archivo .asm no fue ensamblado "
+            "automáticamente. Para compilarlo manualmente, instálalo con:\n"
             "  wsl sudo apt-get install -y nasm"
         )
         return False, "", errors, warnings

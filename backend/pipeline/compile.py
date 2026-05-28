@@ -80,6 +80,16 @@ def main() -> int:
     flowchart_state = request.get("flowchartState") or {}
     mermaid_in = request.get("mermaidCode") or ""
 
+    # --- DEBUG temporal: ver qué llega del frontend ---
+    _dbg_nodes = flowchart_state.get("nodes", [])
+    _dbg_conns = flowchart_state.get("connections", [])
+    sys.stderr.write(f"[DBG] {len(_dbg_nodes)} nodos, {len(_dbg_conns)} conexiones\n")
+    for n in _dbg_nodes:
+        sys.stderr.write(f"  N[{n.get('id','')}] type={n.get('type')!r} data={n.get('data')!r}\n")
+    for c in _dbg_conns:
+        sys.stderr.write(f"  C: {c.get('sourceId','')} --{c.get('type','')}--> {c.get('targetId','')}\n")
+    sys.stderr.flush()
+
     errors: list[str] = []
     warnings: list[str] = []
     c_code = ""
@@ -117,7 +127,9 @@ def main() -> int:
                 if asm_ok:
                     files["elf"] = os.path.relpath(elf_abs, PROJECT_ROOT).replace(os.sep, "/")
                 else:
-                    errors.extend(asm_errors)
+                    # NASM/ld no disponible o falló — no es error fatal,
+                    # el .c y .asm ya se generaron correctamente.
+                    warnings.extend(asm_errors)
             except Exception as exc:
                 warnings.append(f"Ensamblador: error inesperado — {exc}")
 

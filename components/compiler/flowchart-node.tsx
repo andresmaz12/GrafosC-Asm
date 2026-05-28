@@ -22,15 +22,26 @@ interface FlowchartNodeComponentProps {
   onUpdate: (updates: Partial<FlowchartNode>) => void
   onDelete: () => void
   onConnectionStart?: (nodeId: string, side: HandleSide, e: React.MouseEvent) => void
+  zoom?: number
 }
 
 const HANDLE_SIDES: HandleSide[] = ['n', 's', 'e', 'w']
+
+const RESIZE_CORNERS = ['nw', 'ne', 'sw', 'se'] as const
+type ResizeCorner = typeof RESIZE_CORNERS[number]
 
 const HANDLE_POSITION_CLASSES: Record<HandleSide, string> = {
   n: 'left-1/2 -translate-x-1/2 -top-2',
   s: 'left-1/2 -translate-x-1/2 -bottom-2',
   e: '-right-2 top-1/2 -translate-y-1/2',
   w: '-left-2 top-1/2 -translate-y-1/2',
+}
+
+const CORNER_POSITION_CLASSES: Record<ResizeCorner, string> = {
+  nw: '-top-1.5 -left-1.5 cursor-nwse-resize',
+  ne: '-top-1.5 -right-1.5 cursor-nesw-resize',
+  sw: '-bottom-1.5 -left-1.5 cursor-nesw-resize',
+  se: '-bottom-1.5 -right-1.5 cursor-nwse-resize',
 }
 
 export function FlowchartNodeComponent({
@@ -41,9 +52,12 @@ export function FlowchartNodeComponent({
   onUpdate,
   onDelete,
   onConnectionStart,
+  zoom = 1,
 }: FlowchartNodeComponentProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [resizingCorner, setResizingCorner] = useState<ResizeCorner | null>(null)
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, w: 0, h: 0, px: 0, py: 0 })
   const nodeRef = useRef<HTMLDivElement>(null)
 
   const colors = SHAPE_COLORS[node.type]
@@ -51,6 +65,9 @@ export function FlowchartNodeComponent({
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement
     if (target.closest('[data-handle="true"]')) {
+      return
+    }
+    if (target.closest('[data-resize="true"]')) {
       return
     }
     if (target.closest('[data-control="true"]')) {
@@ -78,8 +95,11 @@ export function FlowchartNodeComponent({
       if (!parent) return
 
       const parentRect = parent.getBoundingClientRect()
-      const x = e.clientX - parentRect.left - dragOffset.x
-      const y = e.clientY - parentRect.top - dragOffset.y
+      const screenX = e.clientX - parentRect.left - dragOffset.x
+      const screenY = e.clientY - parentRect.top - dragOffset.y
+
+      const x = screenX / zoom
+      const y = screenY / zoom
 
       onUpdate({
         position: { x: Math.max(0, x), y: Math.max(0, y) },
@@ -97,7 +117,61 @@ export function FlowchartNodeComponent({
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isDragging, dragOffset, onUpdate])
+  }, [isDragging, dragOffset, onUpdate, zoom])
+
+  useEffect(() => {
+    if (!resizingCorner) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = (e.clientX - resizeStart.x) / zoom
+      const dy = (e.clientY - resizeStart.y) / zoom
+
+      let newW = resizeStart.w
+      let newH = resizeStart.h
+      let newX = resizeStart.px
+      let newY = resizeStart.py
+
+      const minSize = 40
+
+      if (resizingCorner.includes('e')) {
+        newW = Math.max(minSize, resizeStart.w + dx)
+      }
+      if (resizingCorner.includes('w')) {
+        const potentialW = resizeStart.w - dx
+        if (potentialW >= minSize) {
+          newW = potentialW
+          newX = resizeStart.px + dx
+        }
+      }
+      if (resizingCorner.includes('s')) {
+        newH = Math.max(minSize, resizeStart.h + dy)
+      }
+      if (resizingCorner.includes('n')) {
+        const potentialH = resizeStart.h - dy
+        if (potentialH >= minSize) {
+          newH = potentialH
+          newY = resizeStart.py + dy
+        }
+      }
+
+      onUpdate({
+        position: { x: newX, y: newY },
+        size: { width: newW, height: newH },
+      })
+    }
+
+    const handleMouseUp = () => {
+      setResizingCorner(null)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [resizingCorner, resizeStart, onUpdate, zoom])
 
   const renderShape = () => {
     const baseClasses = cn(
@@ -223,6 +297,35 @@ export function FlowchartNodeComponent({
                 'hover:scale-125 hover:bg-primary transition-all duration-150',
                 'cursor-crosshair shadow-md z-20 animate-fade-in-up',
                 HANDLE_POSITION_CLASSES[side],
+              )}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Resize handles */}
+      {isSelected && (
+        <>
+          {RESIZE_CORNERS.map((corner) => (
+            <div
+              key={corner}
+              data-resize="true"
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                setResizingCorner(corner)
+                setResizeStart({
+                  x: e.clientX,
+                  y: e.clientY,
+                  w: node.size.width,
+                  h: node.size.height,
+                  px: node.position.x,
+                  py: node.position.y
+                })
+              }}
+              className={cn(
+                'absolute h-3 w-3 bg-primary border border-background z-20',
+                CORNER_POSITION_CLASSES[corner]
               )}
             />
           ))}

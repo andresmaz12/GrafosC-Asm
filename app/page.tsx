@@ -40,7 +40,11 @@ import type {
   Project,
   FunctionParameter,
   StartEndData,
-  InputOutputData
+  ProcessData,
+  DecisionData,
+  InputOutputData,
+  SubprocessData,
+  ReturnData
 } from '@/lib/compiler/types'
 
 // Generar ID unico
@@ -157,6 +161,17 @@ export default function CompiladorPage() {
   // Agregar nuevo nodo
   const handleNodeAdd = useCallback((type: FlowchartShapeType, position: { x: number; y: number }) => {
     const defaultSize = DEFAULT_SHAPE_SIZES[type]
+
+    // Inicializar data por defecto segun el tipo de figura
+    const defaultData: Record<FlowchartShapeType, FlowchartNode['data']> = {
+      'start-end': { functionName: 'main', parameters: [], isStart: true } as StartEndData,
+      'process': { processType: 'print' as const, printContent: 'Hola' } as ProcessData,
+      'decision': { conditionalType: 'if' as const, condition: 'x > 0', cases: [{ label: 'Si', condition: '' }] } as DecisionData,
+      'input-output': { variable: { name: 'x', type: 'int' as const, value: '0' } } as InputOutputData,
+      'subprocess': { functionName: 'funcion', arguments: [] } as SubprocessData,
+      'return': { returnValue: '0' } as ReturnData,
+    }
+
     const newNode: FlowchartNode = {
       id: generateId(),
       type,
@@ -166,7 +181,8 @@ export default function CompiladorPage() {
       },
       size: defaultSize,
       content: DEFAULT_CONTENT[type],
-      connections: []
+      connections: [],
+      data: defaultData[type],
     }
 
     setFlowchartState(prev => ({

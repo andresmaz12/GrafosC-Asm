@@ -380,7 +380,6 @@ export function FlowchartCanvas({
         ref={canvasRef}
         className={cn(
           'flex-1 relative overflow-hidden canvas-grid',
-          'transition-all duration-200',
           isDropTarget && 'drop-target-active ring-2 ring-primary ring-inset',
         )}
         onClick={undefined}
@@ -394,13 +393,17 @@ export function FlowchartCanvas({
             : connecting
             ? 'crosshair'
             : 'grab',
+          backgroundPosition: `${pan.x}px ${pan.y}px`,
+          backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
+          transition: isPanningRef.current ? 'none' : 'background-position 100ms, background-size 100ms, box-shadow 200ms',
         }}
       >
         <div
           ref={transformRef}
-          className="absolute inset-0 origin-top-left transition-transform duration-100"
+          className="absolute inset-0 origin-top-left"
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transition: isPanningRef.current ? 'none' : 'transform 100ms',
           }}
         >
           {/* Capa SVG para conexiones (queda detras de los nodos) */}
@@ -452,6 +455,7 @@ export function FlowchartCanvas({
               onUpdate={(updates) => onNodeUpdate(node.id, updates)}
               onDelete={() => onNodeDelete(node.id)}
               onConnectionStart={handleConnectionStart}
+              zoom={zoom}
             />
           ))}
         </div>

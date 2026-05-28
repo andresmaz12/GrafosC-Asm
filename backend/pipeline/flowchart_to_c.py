@@ -162,7 +162,12 @@ class _Builder:
             data = node.get("data") or {}
 
             if ntype == "start-end":
-                if not data.get("isStart", True):
+                is_start = data.get("isStart", True)
+                content_lower = (node.get("content") or "").strip().lower()
+                if content_lower.startswith("fin") or content_lower.startswith("end"):
+                    is_start = False
+
+                if not is_start:
                     break
                 next_id = self.first_default_target(current_id)
                 current_id = next_id
@@ -268,9 +273,30 @@ class _Builder:
 def _node_input_output(node):
     data = node.get("data") or {}
     var = data.get("variable") or {}
-    nombre = var.get("name") or "var"
-    tipo = var.get("type") or "int"
+    nombre = var.get("name", "")
+    tipo = var.get("type", "")
     valor = var.get("value")
+
+    # Dar prioridad al contenido visual (lo que el usuario escribio en la figura)
+    content = (node.get("content") or "").strip()
+    if content:
+        # Intentar matchear "int x = 5"
+        m = re.match(r"(int|float|char|bool|string)\s+(\w+)\s*=\s*(.*)", content)
+        if m:
+            tipo = m.group(1)
+            nombre = m.group(2)
+            valor = m.group(3).strip() or "0"
+        else:
+            # Intentar matchear "x = 5"
+            m2 = re.match(r"(\w+)\s*=\s*(.*)", content)
+            if m2 and m2.group(1) not in ("int", "float", "char", "bool", "string"):
+                nombre = m2.group(1)
+                valor = m2.group(2).strip() or "0"
+
+    nombre = nombre or "var"
+    tipo = tipo or "int"
+    valor = valor if valor is not None else "0"
+    
     return NodoAsignacion(("KEYWORD", tipo), ("IDENTIFIER", nombre), _parse_expr(valor))
 
 
@@ -366,9 +392,18 @@ def build_program(flowchart_state):
     warnings: list[str] = []
     builder = _Builder(flowchart_state, warnings)
 
+    def is_real_start(n):
+        if n.get("type") != "start-end": return False
+        data = n.get("data") or {}
+        is_start = data.get("isStart", True)
+        content_lower = (n.get("content") or "").strip().lower()
+        if content_lower.startswith("fin") or content_lower.startswith("end"):
+            is_start = False
+        return is_start
+
     start_nodes = [
         n for n in flowchart_state.get("nodes", [])
-        if n.get("type") == "start-end" and (n.get("data") or {}).get("isStart", True)
+        if is_real_start(n)
     ]
 
     if not start_nodes:
@@ -394,7 +429,10 @@ def build_program(flowchart_state):
         tipo_ret = "int"
         funcion = NodoFuncion(("KEYWORD", tipo_ret), ("IDENTIFIER", nombre), params, cuerpo)
         if nombre == "main":
-            main = funcion
+            if main is None:
+                main = funcion
+            else:
+                warnings.append("Multiples funciones 'main' detectadas. Ignorando duplicados.")
         else:
             funciones.append(funcion)
 
