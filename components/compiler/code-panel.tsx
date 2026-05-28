@@ -11,7 +11,15 @@ import { Code2, Cpu, Copy, Check, Download, Terminal, Trash2, ChevronDown, Chevr
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 export interface EchoMessage {
   id: string
   type: 'info' | 'success' | 'warning' | 'error'
@@ -39,6 +47,12 @@ export function CodePanel({
   const [copiedTab, setCopiedTab] = useState<'c' | 'asm' | 'mermaid' | null>(null)
   const [isEchoExpanded, setIsEchoExpanded] = useState(true)
   const [echoHeight, setEchoHeight] = useState(160)
+  
+  // Download Dialog State
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false)
+  const [downloadContent, setDownloadContent] = useState('')
+  const [downloadFileName, setDownloadFileName] = useState('')
+
   const scrollRef = useRef<HTMLDivElement>(null)
   const echoResizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
 
@@ -77,24 +91,34 @@ export function CodePanel({
     setTimeout(() => setCopiedTab(null), 2000)
   }
 
-  const handleDownload = (code: string, filename: string) => {
-    const blob = new Blob([code], { type: 'text/plain' })
+  const promptDownload = (code: string, defaultFilename: string) => {
+    setDownloadContent(code)
+    setDownloadFileName(defaultFilename)
+    setIsDownloadOpen(true)
+  }
+
+  const confirmDownload = () => {
+    if (!downloadFileName.trim() || !downloadContent) return
+    
+    const blob = new Blob([downloadContent], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = filename
+    a.download = downloadFileName.trim()
     a.click()
     URL.revokeObjectURL(url)
+    
+    setIsDownloadOpen(false)
   }
 
   const renderCodeWithLineNumbers = (code: string) => {
     const lines = code.split('\n')
     return (
-      <div className="code-panel">
+      <div className="code-panel w-fit min-w-full">
         {lines.map((line, index) => (
-          <div key={index} className="flex hover:bg-muted/30 transition-colors">
-            <span className="line-number text-xs">{index + 1}</span>
-            <pre className="flex-1 whitespace-pre-wrap break-all">
+          <div key={index} className="flex hover:bg-muted/30 transition-colors w-full">
+            <span className="line-number text-xs shrink-0">{index + 1}</span>
+            <pre className="flex-1 whitespace-pre pr-4">
               <code>{line}</code>
             </pre>
           </div>
@@ -133,7 +157,7 @@ export function CodePanel({
     <TooltipProvider delayDuration={300}>
       <div className={cn('flex flex-col h-full min-h-0 min-w-0 bg-panel border-l border-border animate-slide-in-right', className)}>
         {/* Code Tabs */}
-        <Tabs defaultValue="c" className="flex flex-col flex-1">
+        <Tabs defaultValue="c" className="flex flex-col flex-1 min-h-0">
           {/* Tab Headers */}
           <div className="flex items-center justify-between px-2 py-2 border-b border-border">
             <TabsList className="grid grid-cols-3 h-8">
@@ -180,7 +204,7 @@ export function CodePanel({
                       variant="ghost" 
                       size="icon" 
                       className="h-6 w-6"
-                      onClick={() => handleDownload(cCode, 'main.c')}
+                      onClick={() => promptDownload(cCode, 'main.c')}
                     >
                       <Download className="h-3.5 w-3.5" />
                     </Button>
@@ -189,7 +213,7 @@ export function CodePanel({
                 </Tooltip>
               </div>
             </div>
-            <div className="flex-1 overflow-auto custom-scrollbar bg-code-bg p-3">
+            <div className="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar bg-code-bg p-3">
               {cCode ? (
                 renderCodeWithLineNumbers(cCode)
               ) : (
@@ -228,7 +252,7 @@ export function CodePanel({
                       variant="ghost" 
                       size="icon" 
                       className="h-6 w-6"
-                      onClick={() => handleDownload(assemblyCode, 'main.asm')}
+                      onClick={() => promptDownload(assemblyCode, 'main.asm')}
                     >
                       <Download className="h-3.5 w-3.5" />
                     </Button>
@@ -237,7 +261,7 @@ export function CodePanel({
                 </Tooltip>
               </div>
             </div>
-            <div className="flex-1 overflow-auto custom-scrollbar bg-code-bg p-3">
+            <div className="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar bg-code-bg p-3">
               {assemblyCode ? (
                 renderCodeWithLineNumbers(assemblyCode)
               ) : (
@@ -277,7 +301,7 @@ export function CodePanel({
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => handleDownload(mermaidCode ?? '', 'diagram.md')}
+                      onClick={() => promptDownload(mermaidCode ?? '', 'diagram.md')}
                       disabled={!mermaidCode}
                     >
                       <Download className="h-3.5 w-3.5" />
@@ -287,7 +311,7 @@ export function CodePanel({
                 </Tooltip>
               </div>
             </div>
-            <div className="flex-1 overflow-auto custom-scrollbar bg-code-bg p-3">
+            <div className="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar bg-code-bg p-3">
               {mermaidCode ? (
                 renderCodeWithLineNumbers(mermaidCode)
               ) : (
@@ -388,6 +412,37 @@ export function CodePanel({
           )}
         </div>
       </div>
+
+      {/* Download Dialog */}
+      <Dialog open={isDownloadOpen} onOpenChange={setIsDownloadOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Descargar archivo</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="filename">Nombre del archivo</Label>
+              <Input
+                id="filename"
+                value={downloadFileName}
+                onChange={(e) => setDownloadFileName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') confirmDownload()
+                }}
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDownloadOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmDownload}>
+              Descargar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   )
 }

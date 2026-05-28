@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { 
   Dialog,
   DialogContent,
@@ -71,6 +72,12 @@ export function ProjectManager({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  
+  // Download Dialog State
+  const [isExportOpen, setIsExportOpen] = useState(false)
+  const [exportProjectData, setExportProjectData] = useState<Project | null>(null)
+  const [exportFileName, setExportFileName] = useState('')
+  
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Cargar proyectos
@@ -113,8 +120,26 @@ export function ProjectManager({
     setEditingId(null)
   }
 
-  const handleExportProject = (project: Project) => {
-    exportProject(project)
+  const handleExportProjectClick = (project: Project) => {
+    setExportProjectData(project)
+    setExportFileName(`${project.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`)
+    setIsExportOpen(true)
+  }
+
+  const confirmExport = () => {
+    if (!exportProjectData || !exportFileName.trim()) return
+
+    const blob = new Blob([JSON.stringify(exportProjectData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = exportFileName.trim()
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    setIsExportOpen(false)
   }
 
   const handleImportProject = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,7 +300,7 @@ export function ProjectManager({
                           className="h-7 w-7"
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleExportProject(project)
+                            handleExportProjectClick(project)
                           }}
                         >
                           <Download className="h-3.5 w-3.5" />
@@ -327,6 +352,37 @@ export function ProjectManager({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Export Dialog */}
+      <Dialog open={isExportOpen} onOpenChange={setIsExportOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Exportar proyecto</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="exportFileName">Nombre del archivo</Label>
+              <Input
+                id="exportFileName"
+                value={exportFileName}
+                onChange={(e) => setExportFileName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') confirmExport()
+                }}
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsExportOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmExport}>
+              Exportar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
